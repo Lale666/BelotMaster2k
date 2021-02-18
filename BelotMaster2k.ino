@@ -1,33 +1,35 @@
-// BELAS 2K (BELot mASter 2k)
-// V0.20
-// 13.02.2021.
-// Changes since V0.10:
-// - partial code rewrite
-// - changed 16x2 LCD screen with 20x4 one
-// - changed analog keypad with IR remote
-// - put comments for easier understanding
-// - temporarily removed buzzer due to compatibility issues
+// Belot Master 2k
+// V0.21
+// 15.02.2021.
+// Changes since V0.21:
+// - added teams´results
+// - changed how data is displayed
+// - decreased delay value for increased responsivity
 
 #define DECODE_NEC 1                // IR remote protocol definition
-#define MARK_EXCESS_MICROS 20    // Compensation for the signal forming of different IR receiver modules
+#define MARK_EXCESS_MICROS 20       // Compensation for the signal forming of different IR receiver modules
 #include <IRremote.h>               // Arduino IRremote library 
-#define BUTTON_ONE    0x52          // Remote controller HEX codes for appropriate buttons
-#define BUTTON_TWO    0x50
-#define BUTTON_THREE  0x10
-#define BUTTON_FOUR   0x56
-#define BUTTON_FIVE   0x54
-#define BUTTON_SIX    0x14
-#define BUTTON_SEVEN  0x4E
-#define BUTTON_EIGHT  0x4C
-#define BUTTON_NINE   0xC
-#define BUTTON_ZERO   0xF
-#define BUTTON_RED    0x46
-#define BUTTON_GREEN  0x44
-#define BUTTON_YELLOW 0x4
-#define BUTTON_BLUE   0x7
-#define BUTTON_OK     0x1A
-#define BUTTON_LEFT   0x5A
-#define BUTTON_RIGHT  0x1B
+#define BUTTON_ONE        0x52      // Remote controller HEX codes for appropriate buttons
+#define BUTTON_TWO        0x50
+#define BUTTON_THREE      0x10
+#define BUTTON_FOUR       0x56
+#define BUTTON_FIVE       0x54
+#define BUTTON_SIX        0x14
+#define BUTTON_SEVEN      0x4E
+#define BUTTON_EIGHT      0x4C
+#define BUTTON_NINE       0xC
+#define BUTTON_ZERO       0xF
+#define BUTTON_RED        0x46
+#define BUTTON_GREEN      0x44
+#define BUTTON_YELLOW     0x4
+#define BUTTON_BLUE       0x7
+#define BUTTON_OK         0x1A
+// #define BUTTON_LEFT       0x5A
+// #define BUTTON_RIGHT      0x1B
+#define BUTTON_CH_PLUS    0x4D
+#define BUTTON_CH_MINUS   0x51
+#define BUTTON_VOL_PLUS   0xD
+#define BUTTON_VOL_MINUS  0x11
 
 #include <LiquidCrystal_I2C.h>      // LCD I2C library
 LiquidCrystal_I2C lcd(0x27,20,4);   // Define 20x4 LCD screen
@@ -37,12 +39,13 @@ const int RGB1 = 3;                 // RGB LED 1 on pin 3
 const int RGB2 = 5;                 // RGB LED 2 on pin 5
 const int RGB3 = 6;                 // RGB LED 3 on pin 6
 // const int BUZZER = 11;              // Buzzer on pin 11
-const int DELAY = 300;
+const int DELAY = 150;
 int TURN = 0;                       // Player´s turn 
 int FLASH = 1;                      // LED Flash
 int TRUMP = 0;                      // Trump card color
 int CHECK1, CHECK2, CHECK3 = 0;     // Checking if the player has been already selected
 int CHECK4, CHECK5, CHECK6 = 0;
+int TEAM1, TEAM2 = 0;
 const char *FIRST, *SECOND, *THIRD, *FOURTH; // Pointers to players
 const char *P1 = "FAKI";           // Players´ names
 const char *P2 = "GELAS";
@@ -60,14 +63,14 @@ void setup() {
   lcd.clear();                      // LDC screen cleared
   lcd.setCursor(5,0);
   lcd.print("WELCOME TO");          // Printing a welcoming note
-  lcd.setCursor(6,1);
-  lcd.print("BELAS 2K");
+  lcd.setCursor(2,1);
+  lcd.print("BELOT MASTER 2k");
   lcd.setCursor(8,2);
-  lcd.print("V0.20");
+  lcd.print("V0.21");
   lcd.setCursor(3,3);
   lcd.print("M/F SCUM 2021.");
   setColor(0,0,0);                  // Turn the RGB LED off
-//  delay(3500);
+  delay(3500);
 
   lcd.clear();                      // List of players
   lcd.setCursor(1,0);
@@ -182,7 +185,7 @@ void setup() {
       }
     }
   TURN = 0;
-  ispis(FIRST,SECOND);
+  ispis(FIRST,SECOND,TEAM1,TEAM2);
   FLASH = 1;
 //  IrReceiver.resume();
 }
@@ -194,67 +197,103 @@ void loop() {
         TURN++;
         if(TURN==1) {
 //          zvuk1;
-          ispis(SECOND,THIRD);
+          ispis(SECOND,THIRD,TEAM1,TEAM2);
           FLASH = 1;
           }
         if(TURN==2) {
 //          zvuk2;
-          ispis(THIRD,FOURTH);
+          ispis(THIRD,FOURTH,TEAM1,TEAM2);
           FLASH = 1;
           }
         if(TURN==3) {
 //          zvuk3;
-          ispis(FOURTH,FIRST);
+          ispis(FOURTH,FIRST,TEAM1,TEAM2);
           FLASH =1;
           }
         if(TURN==4) {
 //          zvuk4;
-          ispis(FIRST,SECOND);
+          ispis(FIRST,SECOND,TEAM1,TEAM2);
           FLASH = 1;
           TURN = 0;
           }
           break;
         case BUTTON_RED:
             setColor(255,0,0);
-            lcd.setCursor(0,2);
-            lcd.print("ADUT JE:  CRVENA");
+            lcd.setCursor(0,3);
+            lcd.print("ADUT JE CRVENA ");
             FLASH = 0;
 //            delay(DELAY);
             break;
           case BUTTON_GREEN:
             setColor(0,255,0);
-            lcd.setCursor(0,2);
-            lcd.print("ADUT JE:  ZELENA");
+            lcd.setCursor(0,3);
+            lcd.print("ADUT JE ZELENA ");
             FLASH = 0;
 //           delay(DELAY);
             break;
           case BUTTON_YELLOW:
             setColor(255,255,0);
-            lcd.setCursor(0,2);
-            lcd.print("ADUT JE:   ZIR  ");
+            lcd.setCursor(0,3);
+            lcd.print("ADUT JE ZIR    ");
             FLASH = 0;
 //            delay(DELAY);
             break;
           case BUTTON_BLUE:
             setColor(0,0,255);
-            lcd.setCursor(0,2);
-            lcd.print("ADUT JE: BUNDEVA");
+            lcd.setCursor(0,3);
+            lcd.print("ADUT JE BUNDEVA");
             FLASH = 0;
             delay(DELAY);
             break;
+          case BUTTON_CH_PLUS:
+            TEAM1++;
+            lcd.setCursor(0,0);
+            lcd.print("MI: ");
+            lcd.print(TEAM1);
+            lcd.print("  ");
+            setColor(255,0,255);
+            delay(DELAY);
+            setColor(0,0,0);
+            break;
+          case BUTTON_CH_MINUS:
+            if(TEAM1==0) break;
+            TEAM1--;
+            lcd.setCursor(0,0);
+            lcd.print("MI: ");
+            lcd.print(TEAM1);
+            lcd.print("  ");
+            setColor(255,0,255);
+            delay(DELAY);
+            setColor(0,0,0);
+            break;
+          case BUTTON_VOL_PLUS:
+            TEAM2++;
+            lcd.setCursor(10,0);
+            lcd.print("VI: ");
+            lcd.print(TEAM2);
+            lcd.print("  ");
+            setColor(255,0,255);
+            delay(DELAY);
+            setColor(0,0,0);
+            break;
+          case BUTTON_VOL_MINUS:
+            if(TEAM2==0) break;
+            TEAM2--;
+            lcd.setCursor(10,0);
+            lcd.print("VI: ");
+            lcd.print(TEAM2);
+            lcd.print("  ");
+            setColor(255,0,255);
+            delay(DELAY);
+            setColor(0,0,0);
+            break;
         }
-      lcd.setCursor(0,3);
-      lcd.print(TURN);
-      lcd.print(IrReceiver.decodedIRData.command);
       IrReceiver.resume();
       }
 //  if(FLASH == 1) {
 //  setColor(random(0, 255),random(0, 255),random(0, 255));
 //  delay(100);
 //  }
-  lcd.setCursor(12,3);
-  lcd.print(TURN);
-  lcd.print("PETLJA");
 }
 
 void setColor(int red, int green, int blue) {
@@ -266,13 +305,19 @@ void setColor(int red, int green, int blue) {
   analogWrite(RGB3, blue);
   }
 
-void ispis(const char *SHUFFLES, const char *PLAYS) {
+void ispis(const char *SHUFFLES, const char *PLAYS, int TEAM01, int TEAM02) {
   setColor(0,0,0);
   lcd.clear();
   lcd.setCursor(0,0);
+  lcd.print("MI: ");
+  lcd.print(TEAM01);
+  lcd.setCursor(10,0);
+  lcd.print("VI: ");
+  lcd.print(TEAM02);
+  lcd.setCursor(0,1);
   lcd.print(SHUFFLES);
   lcd.print(" MIJESA");
-  lcd.setCursor(0,1);
+  lcd.setCursor(0,2);
   lcd.print(PLAYS);
   lcd.print(" IGRA PRVI");
 //  delay(50);
