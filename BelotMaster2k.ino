@@ -1,5 +1,5 @@
-// Bela Master 2000 V0.6
-// 09.12.2020.
+// Bela Master 2000 V0.7
+// 10.12.2020.
 
 // #include <Wire.h>
 #include <LiquidCrystal_I2C.h>
@@ -169,14 +169,20 @@ void setColor(int red, int green, int blue) {
 }
 
 void ispis(const char *MIJESA) {
+  setColor(0,0,0);
   lcd.clear();
-  lcd.setCursor(0,0);
+  lcd.setCursor(16,0);
   lcd.print("* ");
   lcd.print(MIJESA);
   lcd.print(" MIJESA *");
-// lcd.setCursor(0,1);
-// lcd.print("* ");
-// lcd.print(MUS);
-// lcd.print(" JE MUS *");
-  delay(DELAY);
+  delay(150);
+  for (int x = 15; x > -1; x--) {
+    lcd.scrollDisplayLeft();
+    lcd.clear();
+    lcd.setCursor(x,0);
+    lcd.print("* ");
+    lcd.print(MIJESA);
+    lcd.print(" MIJESA *");
+    delay(150);
+  }
 }
