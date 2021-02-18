@@ -1,5 +1,5 @@
-// Bela Master 2000 V0.9
-// 21.01.2021.
+// Bela Master 2000 V0.10
+// 04.02.2021.
 
 #include <LiquidCrystal_I2C.h>
 #include <Keypad.h>
@@ -11,13 +11,13 @@ const int RGB1 = 3;
 const int RGB2 = 5;
 const int RGB3 = 6;
 const int BUZZER = 11;
-const int DELAY = 500;
+const int DELAY = 300;
 int TURN = 0;
 int BLIC = 1;
 int BOJA = 0;
 int PROVJERAA, PROVJERAB, PROVJERAC, PROVJERAD = 0;
 const char *PRVI, *DRUGI, *TRECI, *CETVRTI;
-const char *P1 = "FAKI ";
+const char *P1 = "SECA ";
 const char *P2 = "GELAS";
 const char *P3 = "KRAJA";
 const char *P4 = "LALE ";
@@ -140,27 +140,23 @@ void loop() {
   {
     TURN++;
     if(TURN==1) {
-      zvuk();
-//      tone(BUZZER, 415, 66);
+      zvuk1();
       ispis(DRUGI,TRECI);
       BLIC = 1;
     }
     if(TURN==2) {
-      zvuk();
-//      tone(BUZZER, 415, 66);
+      zvuk2();
       ispis(TRECI,CETVRTI);
       BLIC = 1;
     }
     if(TURN==3) {
-      zvuk();
-//      tone(BUZZER, 415, 66);
+      zvuk3();
       ispis(CETVRTI,PRVI);
       BLIC = 1;
     }
     if(TURN==4) {
       TURN = 0;
-      zvuk();
-//      tone(BUZZER, 415, 66);
+      zvuk4();
       ispis(PRVI,DRUGI);
       BLIC = 1;
     }
@@ -247,17 +243,118 @@ void ispis(const char *MIJESA, const char *IGRA) {
   }
 }
 
-void zvuk() {
+void zvuk1() {
+  tone(BUZZER, 329);
+  delay(400);
+  tone(BUZZER, 392);
+  delay(400);
+  tone(BUZZER, 440);
+  delay(600);
+  tone(BUZZER, 329);
+  delay(400);
+  tone(BUZZER, 392);
+  delay(400);
+  tone(BUZZER, 466);
+  delay(200);
+  tone(BUZZER, 440);
+  delay(800);
+  tone(BUZZER, 329);
+  delay(400);
+  tone(BUZZER, 392);
+  delay(400);
+  tone(BUZZER, 440);
+  delay(600);
+  tone(BUZZER, 392);
+  delay(400);
+  tone(BUZZER, 329);
+  delay(400);
+  noTone(BUZZER);
+}
+
+void zvuk2() {
   tone(BUZZER, 830);
   delay(250);
-  noTone(BUZZER);
   tone(BUZZER, 622);
   delay(250);
-  noTone(BUZZER);
   tone(BUZZER, 415);
   delay(250);
-  noTone(BUZZER);
   tone(BUZZER, 466);
   delay(250);
+  noTone(BUZZER);
+}
+
+void zvuk3() {
+  tone(BUZZER, 440);
+  delay(500);
+  noTone(BUZZER);
+  tone(BUZZER, 440);
+  delay(500);
+  noTone(BUZZER);
+  tone(BUZZER, 440);
+  delay(500);
+  noTone(BUZZER);
+  tone(BUZZER, 349);
+  delay(350);
+  noTone(BUZZER);
+  tone(BUZZER, 523);
+  delay(150);
+  noTone(BUZZER);
+  tone(BUZZER, 440);
+  delay(500);
+  noTone(BUZZER);
+  tone(BUZZER, 349);
+  delay(350);
+  noTone(BUZZER);
+  tone(BUZZER, 523);
+  delay(150);
+  noTone(BUZZER);
+  tone(BUZZER, 440);
+  delay(500);
+  noTone(BUZZER);
+  delay(500);
+  tone(BUZZER, 659);
+  delay(500);
+  noTone(BUZZER);
+  tone(BUZZER, 659);
+  delay(500);
+  noTone(BUZZER);
+  tone(BUZZER, 659);
+  delay(500);
+  noTone(BUZZER);
+  tone(BUZZER, 698);
+  delay(350);
+  noTone(BUZZER);
+  tone(BUZZER, 523);
+  delay(150);
+  noTone(BUZZER);
+  tone(BUZZER, 415);
+  delay(500);
+  noTone(BUZZER);
+  tone(BUZZER, 349);
+  delay(350);
+  noTone(BUZZER);
+  tone(BUZZER, 523);
+  delay(150);
+  noTone(BUZZER);
+  tone(BUZZER, 440);
+  delay(500);
+  noTone(BUZZER);
+}
+
+void zvuk4() {
+  tone(BUZZER, 440);
+  delay(200);
+  tone(BUZZER, 554);
+  delay(200);
+  tone(BUZZER, 659);
+  delay(200);
+  tone(BUZZER, 880);
+  delay(200);
+  noTone(BUZZER);
+  delay(200);
+  tone(BUZZER, 659);
+  delay(200);
+  tone(BUZZER, 880);
+  delay(600);
   noTone(BUZZER);
 }
