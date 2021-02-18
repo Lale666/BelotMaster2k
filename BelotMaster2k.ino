@@ -1,5 +1,5 @@
-// Bela Master 2000 V0.8
-// 28.12.2020.
+// Bela Master 2000 V0.9
+// 21.01.2021.
 
 #include <LiquidCrystal_I2C.h>
 #include <Keypad.h>
@@ -10,9 +10,11 @@ const int SWITCH = 9; // prekidac
 const int RGB1 = 3;
 const int RGB2 = 5;
 const int RGB3 = 6;
+const int BUZZER = 11;
 const int DELAY = 500;
 int TURN = 0;
 int BLIC = 1;
+int BOJA = 0;
 int PROVJERAA, PROVJERAB, PROVJERAC, PROVJERAD = 0;
 const char *PRVI, *DRUGI, *TRECI, *CETVRTI;
 const char *P1 = "FAKI ";
@@ -78,6 +80,7 @@ void setup() {
       if(TURN==2) TRECI = P1;
       if(TURN==3) CETVRTI = P1;
       setColor(255,0,255);
+      tone(BUZZER, 666, 66);
       delay(DELAY);
       setColor(0,0,0);
       TURN++;
@@ -90,6 +93,7 @@ void setup() {
       if(TURN==2) TRECI = P2;
       if(TURN==3) CETVRTI = P2;
       setColor(255,0,255);
+      tone(BUZZER, 666, 66);
       delay(DELAY);
       setColor(0,0,0);
       TURN++;
@@ -102,6 +106,7 @@ void setup() {
       if(TURN==2) TRECI = P3;
       if(TURN==3) CETVRTI = P3;
       setColor(255,0,255);
+      tone(BUZZER, 666, 66);
       delay(DELAY);
       setColor(0,0,0);
       TURN++;
@@ -114,6 +119,7 @@ void setup() {
       if(TURN==2) TRECI = P4;
       if(TURN==3) CETVRTI = P4;
       setColor(255,0,255);
+      tone(BUZZER, 666, 66);
       delay(DELAY);
       setColor(0,0,0);
       TURN++;
@@ -122,7 +128,7 @@ void setup() {
   }
  }
   TURN = 0;
-  ispis(PRVI);
+  ispis(PRVI,DRUGI);
   BLIC = 1;
 }
 
@@ -134,20 +140,28 @@ void loop() {
   {
     TURN++;
     if(TURN==1) {
-      ispis(DRUGI);
+      zvuk();
+//      tone(BUZZER, 415, 66);
+      ispis(DRUGI,TRECI);
       BLIC = 1;
     }
     if(TURN==2) {
-      ispis(TRECI);
+      zvuk();
+//      tone(BUZZER, 415, 66);
+      ispis(TRECI,CETVRTI);
       BLIC = 1;
     }
     if(TURN==3) {
-      ispis(CETVRTI);
+      zvuk();
+//      tone(BUZZER, 415, 66);
+      ispis(CETVRTI,PRVI);
       BLIC = 1;
     }
     if(TURN==4) {
       TURN = 0;
-      ispis(PRVI);
+      zvuk();
+//      tone(BUZZER, 415, 66);
+      ispis(PRVI,DRUGI);
       BLIC = 1;
     }
   }
@@ -160,30 +174,34 @@ void loop() {
   {
     case 'A':
       setColor(0,0,255);
-      lcd.setCursor(0,1);
+      lcd.setCursor(0,0);
       lcd.print("ADUT JE: BUNDEVA");
       BLIC = 0;
+      tone(BUZZER, 666, 66);
       delay(DELAY);
       break;
     case 'B':
       setColor(255,0,0);
-      lcd.setCursor(0,1);
+      lcd.setCursor(0,0);
       lcd.print("ADUT JE:  CRVENA");
       BLIC = 0;
+      tone(BUZZER, 666, 66);
       delay(DELAY);
       break;
     case 'C':
       setColor(0,255,0);
-      lcd.setCursor(0,1);
+      lcd.setCursor(0,0);
       lcd.print("ADUT JE:  ZELENA");
       BLIC = 0;
+      tone(BUZZER, 666, 66);
       delay(DELAY);
       break;
     case 'D':
       setColor(255,255,0);
-      lcd.setCursor(0,1);
+      lcd.setCursor(0,0);
       lcd.print("ADUT JE:   ZIR  ");
       BLIC = 0;
+      tone(BUZZER, 666, 66);
       delay(DELAY);
       break;
     default:  // LEDica nasumicno mijenja boje dok se ne odabere adut
@@ -204,13 +222,16 @@ void setColor(int red, int green, int blue) {
   analogWrite(RGB3, blue);  
 }
 
-void ispis(const char *MIJESA) {
+void ispis(const char *MIJESA, const char *IGRA) {
   setColor(0,0,0);
   lcd.clear();
   lcd.setCursor(16,0);
   lcd.print("* ");
   lcd.print(MIJESA);
   lcd.print(" MIJESA *");
+  lcd.setCursor(16,1);
+  lcd.print(IGRA);
+  lcd.print("  IGRA PRVI");
   delay(150);
   for (int x = 15; x > -1; x--) {
     lcd.scrollDisplayLeft();
@@ -219,6 +240,24 @@ void ispis(const char *MIJESA) {
     lcd.print("* ");
     lcd.print(MIJESA);
     lcd.print(" MIJESA *");
+    lcd.setCursor(x,1);
+    lcd.print(IGRA);
+    lcd.print(" IGRA PRVI!");
     delay(150);
   }
+}
+
+void zvuk() {
+  tone(BUZZER, 830);
+  delay(250);
+  noTone(BUZZER);
+  tone(BUZZER, 622);
+  delay(250);
+  noTone(BUZZER);
+  tone(BUZZER, 415);
+  delay(250);
+  noTone(BUZZER);
+  tone(BUZZER, 466);
+  delay(250);
+  noTone(BUZZER);
 }
