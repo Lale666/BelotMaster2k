@@ -1,18 +1,19 @@
-// Bela Master 2000 V0.7
-// 10.12.2020.
+// Bela Master 2000 V0.8
+// 28.12.2020.
 
-// #include <Wire.h>
 #include <LiquidCrystal_I2C.h>
 #include <Keypad.h>
 
 LiquidCrystal_I2C lcd(0x27,16,2);
 
-const int SWITCH = 9;
+const int SWITCH = 9; // prekidac
 const int RGB1 = 3;
 const int RGB2 = 5;
 const int RGB3 = 6;
 const int DELAY = 500;
 int TURN = 0;
+int BLIC = 1;
+int PROVJERAA, PROVJERAB, PROVJERAC, PROVJERAD = 0;
 const char *PRVI, *DRUGI, *TRECI, *CETVRTI;
 const char *P1 = "FAKI ";
 const char *P2 = "GELAS";
@@ -46,18 +47,32 @@ void setup() {
   Serial.begin(9600);
   delay(3000);
 
+  // ispis igraca
+  lcd.clear();
   lcd.setCursor(0,0);
-  lcd.print("A) FAKI B) GELAS");
+  lcd.print("A ");
+  lcd.print(P1);
+  lcd.setCursor(9,0);
+  lcd.print("B ");
+  lcd.print(P2);
   lcd.setCursor(0,1);
-  lcd.print("C) KRAJA D) LALE");
+  lcd.print("C ");
+  lcd.print(P3);
+  lcd.setCursor(9,1);
+  lcd.print("D ");
+  lcd.print(P4);
+
   
   while (TURN < 4) {
+
+    // biranje redoslijeda
     char key = kpd.getKey();
     if(key) {
     }
     switch (key)
     {
       case 'A':
+      if(PROVJERAA>0) break;  // provjera da li je igrac A vec izabran
       if(TURN==0) PRVI = P1;
       if(TURN==1) DRUGI = P1;
       if(TURN==2) TRECI = P1;
@@ -66,8 +81,10 @@ void setup() {
       delay(DELAY);
       setColor(0,0,0);
       TURN++;
+      PROVJERAA++;  // igrac A je izabran
       break;
       case 'B':
+      if(PROVJERAB>0) break;  // provjera da li je igrac B vec izabran
       if(TURN==0) PRVI = P2;
       if(TURN==1) DRUGI = P2;
       if(TURN==2) TRECI = P2;
@@ -76,8 +93,10 @@ void setup() {
       delay(DELAY);
       setColor(0,0,0);
       TURN++;
+      PROVJERAB++;  // igrac B je izabran
       break;
       case 'C':
+      if(PROVJERAC>0) break;  // provjera da li je igrac C vec izabran
       if(TURN==0) PRVI = P3;
       if(TURN==1) DRUGI = P3;
       if(TURN==2) TRECI = P3;
@@ -86,8 +105,10 @@ void setup() {
       delay(DELAY);
       setColor(0,0,0);
       TURN++;
+      PROVJERAC++;  // igrac C je izabran
       break;
       case 'D':
+      if(PROVJERAD>0) break;  // provjera da li je igrac D vec izabran
       if(TURN==0) PRVI = P4;
       if(TURN==1) DRUGI = P4;
       if(TURN==2) TRECI = P4;
@@ -96,11 +117,13 @@ void setup() {
       delay(DELAY);
       setColor(0,0,0);
       TURN++;
+      PROVJERAD++;  // igrac D je izabran
       break;
   }
  }
   TURN = 0;
   ispis(PRVI);
+  BLIC = 1;
 }
 
 void loop() {
@@ -112,19 +135,24 @@ void loop() {
     TURN++;
     if(TURN==1) {
       ispis(DRUGI);
+      BLIC = 1;
     }
     if(TURN==2) {
       ispis(TRECI);
+      BLIC = 1;
     }
     if(TURN==3) {
       ispis(CETVRTI);
+      BLIC = 1;
     }
     if(TURN==4) {
       TURN = 0;
       ispis(PRVI);
+      BLIC = 1;
     }
   }
-  
+
+  // biranje aduta
   char key = kpd.getKey();
   if(key) {
   }
@@ -134,28 +162,36 @@ void loop() {
       setColor(0,0,255);
       lcd.setCursor(0,1);
       lcd.print("ADUT JE: BUNDEVA");
+      BLIC = 0;
       delay(DELAY);
       break;
     case 'B':
       setColor(255,0,0);
       lcd.setCursor(0,1);
       lcd.print("ADUT JE:  CRVENA");
+      BLIC = 0;
       delay(DELAY);
       break;
     case 'C':
       setColor(0,255,0);
       lcd.setCursor(0,1);
       lcd.print("ADUT JE:  ZELENA");
+      BLIC = 0;
       delay(DELAY);
       break;
     case 'D':
       setColor(255,255,0);
       lcd.setCursor(0,1);
       lcd.print("ADUT JE:   ZIR  ");
+      BLIC = 0;
       delay(DELAY);
       break;
-//    default:
+    default:  // LEDica nasumicno mijenja boje dok se ne odabere adut
 //        Serial.println(key);
+          if (BLIC==1) {
+            setColor(random(0, 255),random(0, 255),random(0, 255));
+            delay(200);
+          }
   }
  }
 
