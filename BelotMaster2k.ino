@@ -1,4 +1,4 @@
-// Bela Master 2000 V0.1
+// Bela Master 2000 V0.2
 // 13.11.2020.
 
 const int LED1 = 6;
@@ -6,6 +6,7 @@ const int LED2 = 7;
 const int LED3 = 8;
 const int LED4 = 9;
 const int SWITCH = 5;
+int LED = 6;
 
 void setup() {
 
@@ -13,24 +14,26 @@ void setup() {
   pinMode(LED2,OUTPUT);
   pinMode(LED3,OUTPUT);
   pinMode(LED4,OUTPUT);
-  pinMode(SWITCH,INPUT);
-  
+  pinMode(SWITCH,INPUT_PULLUP);
+  digitalWrite(LED,HIGH);
 }
 
 void loop() {
 
-  digitalWrite(LED1,HIGH);
-  delay(666);
-  digitalWrite(LED1,LOW);
-  digitalWrite(LED2,HIGH);
-  delay(666);
-  digitalWrite(LED2,LOW);
-  digitalWrite(LED3,HIGH);
-  delay(666);
-  digitalWrite(LED3,LOW);
-  digitalWrite(LED4,HIGH);
-  delay(666);
-  digitalWrite(LED4,LOW);
-  delay(666);
-
+  int ValueSW = digitalRead(SWITCH);
+  if(ValueSW)
+  {
+  }
+  else
+  {
+    digitalWrite(LED,LOW);
+    LED++;
+    if(LED==10)
+    {
+      LED = 6;
+      digitalWrite(LED,HIGH);
+    }    
+    digitalWrite(LED,HIGH);
+    delay(500);
+  }
 }
