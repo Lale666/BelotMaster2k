@@ -1,213 +1,261 @@
-// Bela Master 2000 V0.10
-// 04.02.2021.
+// BELAS 2K (BELot mASter 2k)
+// V0.20
+// 13.02.2021.
+// Changes since V0.10:
+// - partial code rewrite
+// - changed 16x2 LCD screen with 20x4 one
+// - changed analog keypad with IR remote
+// - put comments for easier understanding
+// - temporarily removed buzzer due to compatibility issues
 
-#include <LiquidCrystal_I2C.h>
-#include <Keypad.h>
+#define DECODE_NEC 1                // IR remote protocol definition
+#define MARK_EXCESS_MICROS 20    // Compensation for the signal forming of different IR receiver modules
+#include <IRremote.h>               // Arduino IRremote library 
+#define BUTTON_ONE    0x52          // Remote controller HEX codes for appropriate buttons
+#define BUTTON_TWO    0x50
+#define BUTTON_THREE  0x10
+#define BUTTON_FOUR   0x56
+#define BUTTON_FIVE   0x54
+#define BUTTON_SIX    0x14
+#define BUTTON_SEVEN  0x4E
+#define BUTTON_EIGHT  0x4C
+#define BUTTON_NINE   0xC
+#define BUTTON_ZERO   0xF
+#define BUTTON_RED    0x46
+#define BUTTON_GREEN  0x44
+#define BUTTON_YELLOW 0x4
+#define BUTTON_BLUE   0x7
+#define BUTTON_OK     0x1A
+#define BUTTON_LEFT   0x5A
+#define BUTTON_RIGHT  0x1B
 
-LiquidCrystal_I2C lcd(0x27,16,2);
+#include <LiquidCrystal_I2C.h>      // LCD I2C library
+LiquidCrystal_I2C lcd(0x27,20,4);   // Define 20x4 LCD screen
 
-const int SWITCH = 9; // prekidac
-const int RGB1 = 3;
-const int RGB2 = 5;
-const int RGB3 = 6;
-const int BUZZER = 11;
+const int IR_RECEIVE_PIN = 9;       // IR Receive on pin 9
+const int RGB1 = 3;                 // RGB LED 1 on pin 3
+const int RGB2 = 5;                 // RGB LED 2 on pin 5
+const int RGB3 = 6;                 // RGB LED 3 on pin 6
+// const int BUZZER = 11;              // Buzzer on pin 11
 const int DELAY = 300;
-int TURN = 0;
-int BLIC = 1;
-int BOJA = 0;
-int PROVJERAA, PROVJERAB, PROVJERAC, PROVJERAD = 0;
-const char *PRVI, *DRUGI, *TRECI, *CETVRTI;
-const char *P1 = "SECA ";
+int TURN = 0;                       // Player´s turn 
+int FLASH = 1;                      // LED Flash
+int TRUMP = 0;                      // Trump card color
+int CHECK1, CHECK2, CHECK3 = 0;     // Checking if the player has been already selected
+int CHECK4, CHECK5, CHECK6 = 0;
+const char *FIRST, *SECOND, *THIRD, *FOURTH; // Pointers to players
+const char *P1 = "FAKI";           // Players´ names
 const char *P2 = "GELAS";
 const char *P3 = "KRAJA";
-const char *P4 = "LALE ";
-
-const byte ROWS = 4; // Four rows
-const byte COLS = 1; // Three columns
-char keys[ROWS][COLS] = {
-  {'A'},
-  {'B'},
-  {'C'},
-  {'D'}
-};
-byte rowPins[ROWS] = { 9, 8, 7, 4 };
-byte colPins[COLS] = { 2 }; 
-Keypad kpd = Keypad( makeKeymap(keys), rowPins, colPins, ROWS, COLS );
+const char *P4 = "LALE";
+const char *P5 = "SECA";
+const char *P6 = "VRAG";
 
 void setup() {
-  pinMode (RGB1,OUTPUT); // blue
-  pinMode (RGB2,OUTPUT); // purple
-  pinMode (RGB3,OUTPUT); // green
-  pinMode (SWITCH,INPUT_PULLUP);
-  lcd.init();
-  lcd.backlight();
-  lcd.clear();
-  lcd.print("   WELCOME TO   ");
-  lcd.setCursor(1,1);
-  lcd.print(" THE MACHINE!   ");
-  setColor(0,0,0);
-  Serial.begin(9600);
-  delay(3000);
+  pinMode (RGB1,OUTPUT);            // Blue color
+  pinMode (RGB2,OUTPUT);            // Red color
+  pinMode (RGB3,OUTPUT);            // Green color
+  lcd.init();                       // LCD screen initialization
+  lcd.backlight();                  // LCD backlight turned on
+  lcd.clear();                      // LDC screen cleared
+  lcd.setCursor(5,0);
+  lcd.print("WELCOME TO");          // Printing a welcoming note
+  lcd.setCursor(6,1);
+  lcd.print("BELAS 2K");
+  lcd.setCursor(8,2);
+  lcd.print("V0.20");
+  lcd.setCursor(3,3);
+  lcd.print("M/F SCUM 2021.");
+  setColor(0,0,0);                  // Turn the RGB LED off
+//  delay(3500);
 
-  // ispis igraca
-  lcd.clear();
-  lcd.setCursor(0,0);
-  lcd.print("A ");
-  lcd.print(P1);
-  lcd.setCursor(9,0);
-  lcd.print("B ");
-  lcd.print(P2);
+  lcd.clear();                      // List of players
+  lcd.setCursor(1,0);
+  lcd.print("REDOSLIJED IGRACA:");
   lcd.setCursor(0,1);
-  lcd.print("C ");
+  lcd.print("1) ");
+  lcd.print(P1);
+  lcd.setCursor(0,2);
+  lcd.print("3) ");
   lcd.print(P3);
-  lcd.setCursor(9,1);
-  lcd.print("D ");
+  lcd.setCursor(0,3);
+  lcd.print("5) ");
+  lcd.print(P5);
+  lcd.setCursor(11,1);
+  lcd.print("2) ");
+  lcd.print(P2);
+  lcd.setCursor(11,2);
+  lcd.print("4) ");
   lcd.print(P4);
+  lcd.setCursor(11,3);
+  lcd.print("6) ");
+  lcd.print(P6);
+//  delay(4000);
 
-  
-  while (TURN < 4) {
+  Serial.begin(115200);                 // start serial communication
+  IrReceiver.begin(IR_RECEIVE_PIN, DISABLE_LED_FEEDBACK); // Start the receiver, disable feedback LED
 
-    // biranje redoslijeda
-    char key = kpd.getKey();
-    if(key) {
+
+  while(TURN<4) {
+      if (IrReceiver.decode()) {
+        switch(IrReceiver.decodedIRData.command) {
+          case BUTTON_ONE:
+            if(CHECK1>0) break;         // check if player 1 has already been selected
+            if(TURN==0) FIRST = P1;
+            if(TURN==1) SECOND = P1;
+            if(TURN==2) THIRD = P1;
+            if(TURN==3) FOURTH = P1;
+            setColor(255,0,255);
+//            tone(BUZZER, 666, 66);
+            delay(DELAY);
+            setColor(0,0,0);
+            TURN++;
+            CHECK1++;                   // Player 1 have been selected
+            break;
+          case BUTTON_TWO:
+            if(CHECK2>0) break;         // check if player 2 has already been selected
+            if(TURN==0) FIRST = P2;
+            if(TURN==1) SECOND = P2;
+            if(TURN==2) THIRD = P2;
+            if(TURN==3) FOURTH = P2;
+            setColor(255,0,255);
+//            tone(BUZZER, 666, 66);
+            delay(DELAY);
+            setColor(0,0,0);
+            TURN++;
+            CHECK2++;                   // Player 2 have been selected
+            break;
+          case BUTTON_THREE:
+            if(CHECK3>0) break;         // check if player 3 have already been selected
+            if(TURN==0) FIRST = P3;
+            if(TURN==1) SECOND = P3;
+            if(TURN==2) THIRD = P3;
+            if(TURN==3) FOURTH = P3;
+            setColor(255,0,255);
+//            tone(BUZZER, 666, 66);
+          delay(DELAY);
+            setColor(0,0,0);
+            TURN++;
+            CHECK3++;                   // Player 3 have been selected
+            break;
+          case BUTTON_FOUR:
+            if(CHECK4>0) break;         // check if player 4 have already been selected
+            if(TURN==0) FIRST = P4;
+            if(TURN==1) SECOND = P4;
+            if(TURN==2) THIRD = P4;
+            if(TURN==3) FOURTH = P4;
+            setColor(255,0,255);
+//            tone(BUZZER, 666, 66);
+          delay(DELAY);
+            setColor(0,0,0);
+            TURN++;
+            CHECK4++;                   // Player 4 have been selected
+            break;
+          case BUTTON_FIVE:
+            if(CHECK5>0) break;         // check if player 5 have already been selected
+            if(TURN==0) FIRST = P5;
+            if(TURN==1) SECOND = P5;
+            if(TURN==2) THIRD = P5;
+            if(TURN==3) FOURTH = P5;
+            setColor(255,0,255);
+//            tone(BUZZER, 666, 66);
+            delay(DELAY);
+            setColor(0,0,0);
+            TURN++;
+            CHECK5++;                   // Player 1 have been selected
+            break;
+          case BUTTON_SIX:
+            if(CHECK6>0) break;         // check if player 6 have already been selected
+            if(TURN==0) FIRST = P6;
+            if(TURN==1) SECOND = P6;
+            if(TURN==2) THIRD = P6;
+            if(TURN==3) FOURTH = P6;
+            setColor(255,0,255);
+//            tone(BUZZER, 666, 66);
+            delay(DELAY);
+            setColor(0,0,0);
+            TURN++;
+            CHECK6++;                   // Player 1 have been selected
+            break;
+        }       
+        IrReceiver.resume();
+      }
     }
-    switch (key)
-    {
-      case 'A':
-      if(PROVJERAA>0) break;  // provjera da li je igrac A vec izabran
-      if(TURN==0) PRVI = P1;
-      if(TURN==1) DRUGI = P1;
-      if(TURN==2) TRECI = P1;
-      if(TURN==3) CETVRTI = P1;
-      setColor(255,0,255);
-      tone(BUZZER, 666, 66);
-      delay(DELAY);
-      setColor(0,0,0);
-      TURN++;
-      PROVJERAA++;  // igrac A je izabran
-      break;
-      case 'B':
-      if(PROVJERAB>0) break;  // provjera da li je igrac B vec izabran
-      if(TURN==0) PRVI = P2;
-      if(TURN==1) DRUGI = P2;
-      if(TURN==2) TRECI = P2;
-      if(TURN==3) CETVRTI = P2;
-      setColor(255,0,255);
-      tone(BUZZER, 666, 66);
-      delay(DELAY);
-      setColor(0,0,0);
-      TURN++;
-      PROVJERAB++;  // igrac B je izabran
-      break;
-      case 'C':
-      if(PROVJERAC>0) break;  // provjera da li je igrac C vec izabran
-      if(TURN==0) PRVI = P3;
-      if(TURN==1) DRUGI = P3;
-      if(TURN==2) TRECI = P3;
-      if(TURN==3) CETVRTI = P3;
-      setColor(255,0,255);
-      tone(BUZZER, 666, 66);
-      delay(DELAY);
-      setColor(0,0,0);
-      TURN++;
-      PROVJERAC++;  // igrac C je izabran
-      break;
-      case 'D':
-      if(PROVJERAD>0) break;  // provjera da li je igrac D vec izabran
-      if(TURN==0) PRVI = P4;
-      if(TURN==1) DRUGI = P4;
-      if(TURN==2) TRECI = P4;
-      if(TURN==3) CETVRTI = P4;
-      setColor(255,0,255);
-      tone(BUZZER, 666, 66);
-      delay(DELAY);
-      setColor(0,0,0);
-      TURN++;
-      PROVJERAD++;  // igrac D je izabran
-      break;
-  }
- }
   TURN = 0;
-  ispis(PRVI,DRUGI);
-  BLIC = 1;
+  ispis(FIRST,SECOND);
+  FLASH = 1;
+//  IrReceiver.resume();
 }
 
 void loop() {
-  int ValueSW = digitalRead(SWITCH);
-  if(ValueSW) {
-  }
-  else
-  {
-    TURN++;
-    if(TURN==1) {
-      zvuk1();
-      ispis(DRUGI,TRECI);
-      BLIC = 1;
-    }
-    if(TURN==2) {
-      zvuk2();
-      ispis(TRECI,CETVRTI);
-      BLIC = 1;
-    }
-    if(TURN==3) {
-      zvuk3();
-      ispis(CETVRTI,PRVI);
-      BLIC = 1;
-    }
-    if(TURN==4) {
-      TURN = 0;
-      zvuk4();
-      ispis(PRVI,DRUGI);
-      BLIC = 1;
-    }
-  }
-
-  // biranje aduta
-  char key = kpd.getKey();
-  if(key) {
-  }
-  switch (key)
-  {
-    case 'A':
-      setColor(0,0,255);
-      lcd.setCursor(0,0);
-      lcd.print("ADUT JE: BUNDEVA");
-      BLIC = 0;
-      tone(BUZZER, 666, 66);
-      delay(DELAY);
-      break;
-    case 'B':
-      setColor(255,0,0);
-      lcd.setCursor(0,0);
-      lcd.print("ADUT JE:  CRVENA");
-      BLIC = 0;
-      tone(BUZZER, 666, 66);
-      delay(DELAY);
-      break;
-    case 'C':
-      setColor(0,255,0);
-      lcd.setCursor(0,0);
-      lcd.print("ADUT JE:  ZELENA");
-      BLIC = 0;
-      tone(BUZZER, 666, 66);
-      delay(DELAY);
-      break;
-    case 'D':
-      setColor(255,255,0);
-      lcd.setCursor(0,0);
-      lcd.print("ADUT JE:   ZIR  ");
-      BLIC = 0;
-      tone(BUZZER, 666, 66);
-      delay(DELAY);
-      break;
-    default:  // LEDica nasumicno mijenja boje dok se ne odabere adut
-//        Serial.println(key);
-          if (BLIC==1) {
-            setColor(random(0, 255),random(0, 255),random(0, 255));
-            delay(200);
+  if (IrReceiver.decode()) {
+    switch(IrReceiver.decodedIRData.command) {
+      case BUTTON_OK:
+        TURN++;
+        if(TURN==1) {
+//          zvuk1;
+          ispis(SECOND,THIRD);
+          FLASH = 1;
           }
-  }
- }
+        if(TURN==2) {
+//          zvuk2;
+          ispis(THIRD,FOURTH);
+          FLASH = 1;
+          }
+        if(TURN==3) {
+//          zvuk3;
+          ispis(FOURTH,FIRST);
+          FLASH =1;
+          }
+        if(TURN==4) {
+//          zvuk4;
+          ispis(FIRST,SECOND);
+          FLASH = 1;
+          TURN = 0;
+          }
+          break;
+        case BUTTON_RED:
+            setColor(255,0,0);
+            lcd.setCursor(0,2);
+            lcd.print("ADUT JE:  CRVENA");
+            FLASH = 0;
+//            delay(DELAY);
+            break;
+          case BUTTON_GREEN:
+            setColor(0,255,0);
+            lcd.setCursor(0,2);
+            lcd.print("ADUT JE:  ZELENA");
+            FLASH = 0;
+//           delay(DELAY);
+            break;
+          case BUTTON_YELLOW:
+            setColor(255,255,0);
+            lcd.setCursor(0,2);
+            lcd.print("ADUT JE:   ZIR  ");
+            FLASH = 0;
+//            delay(DELAY);
+            break;
+          case BUTTON_BLUE:
+            setColor(0,0,255);
+            lcd.setCursor(0,2);
+            lcd.print("ADUT JE: BUNDEVA");
+            FLASH = 0;
+            delay(DELAY);
+            break;
+        }
+      lcd.setCursor(0,3);
+      lcd.print(TURN);
+      lcd.print(IrReceiver.decodedIRData.command);
+      IrReceiver.resume();
+      }
+//  if(FLASH == 1) {
+//  setColor(random(0, 255),random(0, 255),random(0, 255));
+//  delay(100);
+//  }
+  lcd.setCursor(12,3);
+  lcd.print(TURN);
+  lcd.print("PETLJA");
+}
 
 void setColor(int red, int green, int blue) {
   red = 255 - red;
@@ -215,146 +263,17 @@ void setColor(int red, int green, int blue) {
   blue = 255 - blue;
   analogWrite(RGB1, red);
   analogWrite(RGB2, green);
-  analogWrite(RGB3, blue);  
-}
+  analogWrite(RGB3, blue);
+  }
 
-void ispis(const char *MIJESA, const char *IGRA) {
+void ispis(const char *SHUFFLES, const char *PLAYS) {
   setColor(0,0,0);
   lcd.clear();
-  lcd.setCursor(16,0);
-  lcd.print("* ");
-  lcd.print(MIJESA);
-  lcd.print(" MIJESA *");
-  lcd.setCursor(16,1);
-  lcd.print(IGRA);
-  lcd.print("  IGRA PRVI");
-  delay(150);
-  for (int x = 15; x > -1; x--) {
-    lcd.scrollDisplayLeft();
-    lcd.clear();
-    lcd.setCursor(x,0);
-    lcd.print("* ");
-    lcd.print(MIJESA);
-    lcd.print(" MIJESA *");
-    lcd.setCursor(x,1);
-    lcd.print(IGRA);
-    lcd.print(" IGRA PRVI!");
-    delay(150);
-  }
-}
-
-void zvuk1() {
-  tone(BUZZER, 329);
-  delay(400);
-  tone(BUZZER, 392);
-  delay(400);
-  tone(BUZZER, 440);
-  delay(600);
-  tone(BUZZER, 329);
-  delay(400);
-  tone(BUZZER, 392);
-  delay(400);
-  tone(BUZZER, 466);
-  delay(200);
-  tone(BUZZER, 440);
-  delay(800);
-  tone(BUZZER, 329);
-  delay(400);
-  tone(BUZZER, 392);
-  delay(400);
-  tone(BUZZER, 440);
-  delay(600);
-  tone(BUZZER, 392);
-  delay(400);
-  tone(BUZZER, 329);
-  delay(400);
-  noTone(BUZZER);
-}
-
-void zvuk2() {
-  tone(BUZZER, 830);
-  delay(250);
-  tone(BUZZER, 622);
-  delay(250);
-  tone(BUZZER, 415);
-  delay(250);
-  tone(BUZZER, 466);
-  delay(250);
-  noTone(BUZZER);
-}
-
-void zvuk3() {
-  tone(BUZZER, 440);
-  delay(500);
-  noTone(BUZZER);
-  tone(BUZZER, 440);
-  delay(500);
-  noTone(BUZZER);
-  tone(BUZZER, 440);
-  delay(500);
-  noTone(BUZZER);
-  tone(BUZZER, 349);
-  delay(350);
-  noTone(BUZZER);
-  tone(BUZZER, 523);
-  delay(150);
-  noTone(BUZZER);
-  tone(BUZZER, 440);
-  delay(500);
-  noTone(BUZZER);
-  tone(BUZZER, 349);
-  delay(350);
-  noTone(BUZZER);
-  tone(BUZZER, 523);
-  delay(150);
-  noTone(BUZZER);
-  tone(BUZZER, 440);
-  delay(500);
-  noTone(BUZZER);
-  delay(500);
-  tone(BUZZER, 659);
-  delay(500);
-  noTone(BUZZER);
-  tone(BUZZER, 659);
-  delay(500);
-  noTone(BUZZER);
-  tone(BUZZER, 659);
-  delay(500);
-  noTone(BUZZER);
-  tone(BUZZER, 698);
-  delay(350);
-  noTone(BUZZER);
-  tone(BUZZER, 523);
-  delay(150);
-  noTone(BUZZER);
-  tone(BUZZER, 415);
-  delay(500);
-  noTone(BUZZER);
-  tone(BUZZER, 349);
-  delay(350);
-  noTone(BUZZER);
-  tone(BUZZER, 523);
-  delay(150);
-  noTone(BUZZER);
-  tone(BUZZER, 440);
-  delay(500);
-  noTone(BUZZER);
-}
-
-void zvuk4() {
-  tone(BUZZER, 440);
-  delay(200);
-  tone(BUZZER, 554);
-  delay(200);
-  tone(BUZZER, 659);
-  delay(200);
-  tone(BUZZER, 880);
-  delay(200);
-  noTone(BUZZER);
-  delay(200);
-  tone(BUZZER, 659);
-  delay(200);
-  tone(BUZZER, 880);
-  delay(600);
-  noTone(BUZZER);
+  lcd.setCursor(0,0);
+  lcd.print(SHUFFLES);
+  lcd.print(" MIJESA");
+  lcd.setCursor(0,1);
+  lcd.print(PLAYS);
+  lcd.print(" IGRA PRVI");
+//  delay(50);
 }
