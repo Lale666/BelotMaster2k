@@ -1,10 +1,10 @@
 // Belot Master 2k
-// V0.21
-// 15.02.2021.
+// V0.22
+// 19.02.2021.
 // Changes since V0.21:
-// - added teams´results
-// - changed how data is displayed
-// - decreased delay value for increased responsivity
+// - implemented input current result function
+// - rearanged how things are printed on screen to fit all the data
+// - removed manual overall result adjustments
 
 #define DECODE_NEC 1                // IR remote protocol definition
 #define MARK_EXCESS_MICROS 20       // Compensation for the signal forming of different IR receiver modules
@@ -24,12 +24,13 @@
 #define BUTTON_YELLOW     0x4
 #define BUTTON_BLUE       0x7
 #define BUTTON_OK         0x1A
-// #define BUTTON_LEFT       0x5A
-// #define BUTTON_RIGHT      0x1B
-#define BUTTON_CH_PLUS    0x4D
-#define BUTTON_CH_MINUS   0x51
-#define BUTTON_VOL_PLUS   0xD
-#define BUTTON_VOL_MINUS  0x11
+#define BUTTON_LEFT       0x5A
+#define BUTTON_RIGHT      0x1B
+#define BUTTON_EXIT       0x5
+// #define BUTTON_CH_PLUS    0x4D
+// #define BUTTON_CH_MINUS   0x51
+// #define BUTTON_VOL_PLUS   0xD
+// #define BUTTON_VOL_MINUS  0x11
 
 #include <LiquidCrystal_I2C.h>      // LCD I2C library
 LiquidCrystal_I2C lcd(0x27,20,4);   // Define 20x4 LCD screen
@@ -45,14 +46,15 @@ int FLASH = 1;                      // LED Flash
 int TRUMP = 0;                      // Trump card color
 int CHECK1, CHECK2, CHECK3 = 0;     // Checking if the player has been already selected
 int CHECK4, CHECK5, CHECK6 = 0;
-int TEAM1, TEAM2 = 0;
+int TEAM1, TEAM2 = 0;               // Overall result for both teams
+int RESULT1, RESULT2 = 0;           // Current result for both teams
 const char *FIRST, *SECOND, *THIRD, *FOURTH; // Pointers to players
 const char *P1 = "FAKI";           // Players´ names
 const char *P2 = "GELAS";
 const char *P3 = "KRAJA";
 const char *P4 = "LALE";
 const char *P5 = "SECA";
-const char *P6 = "VRAG";
+const char *P6 = "SKRGA";
 
 void setup() {
   pinMode (RGB1,OUTPUT);            // Blue color
@@ -65,14 +67,14 @@ void setup() {
   lcd.print("WELCOME TO");          // Printing a welcoming note
   lcd.setCursor(2,1);
   lcd.print("BELOT MASTER 2k");
-  lcd.setCursor(8,2);
-  lcd.print("V0.21");
+  lcd.setCursor(7,2);
+  lcd.print("V 0.22");
   lcd.setCursor(3,3);
   lcd.print("M/F SCUM 2021.");
   setColor(0,0,0);                  // Turn the RGB LED off
   delay(3500);
 
-  lcd.clear();                      // List of players
+  lcd.clear();                      // Printing the list of players
   lcd.setCursor(1,0);
   lcd.print("REDOSLIJED IGRACA:");
   lcd.setCursor(0,1);
@@ -93,7 +95,6 @@ void setup() {
   lcd.setCursor(11,3);
   lcd.print("6) ");
   lcd.print(P6);
-//  delay(4000);
 
   Serial.begin(115200);                 // start serial communication
   IrReceiver.begin(IR_RECEIVE_PIN, DISABLE_LED_FEEDBACK); // Start the receiver, disable feedback LED
@@ -185,7 +186,7 @@ void setup() {
       }
     }
   TURN = 0;
-  ispis(FIRST,SECOND,TEAM1,TEAM2);
+  ispis(FIRST,SECOND,TEAM1,TEAM2,RESULT1,RESULT2);
   FLASH = 1;
 //  IrReceiver.resume();
 }
@@ -195,97 +196,112 @@ void loop() {
     switch(IrReceiver.decodedIRData.command) {
       case BUTTON_OK:
         TURN++;
+        if(RESULT1>1000 & RESULT1>RESULT2) {
+          TEAM1++;
+          RESULT1 = 0;
+          RESULT2 = 0;
+          }
+        if(RESULT1>1000 & RESULT1<RESULT2) {
+          TEAM2++;
+          RESULT1 = 0;
+          RESULT2 = 0;
+          }
+        if(RESULT2>1000 & RESULT2>RESULT1) {
+          TEAM2++;
+          RESULT1 = 0;
+          RESULT2 = 0;
+          }
+        if(RESULT2>1000 & RESULT2<RESULT1) {
+          TEAM1++;
+          RESULT1 = 0;
+          RESULT2 = 0;
+          }
         if(TURN==1) {
 //          zvuk1;
-          ispis(SECOND,THIRD,TEAM1,TEAM2);
+          ispis(SECOND,THIRD,TEAM1,TEAM2,RESULT1,RESULT2);
           FLASH = 1;
           }
         if(TURN==2) {
 //          zvuk2;
-          ispis(THIRD,FOURTH,TEAM1,TEAM2);
+          ispis(THIRD,FOURTH,TEAM1,TEAM2,RESULT1,RESULT2);
           FLASH = 1;
           }
         if(TURN==3) {
 //          zvuk3;
-          ispis(FOURTH,FIRST,TEAM1,TEAM2);
+          ispis(FOURTH,FIRST,TEAM1,TEAM2,RESULT1,RESULT2);
           FLASH =1;
           }
         if(TURN==4) {
 //          zvuk4;
-          ispis(FIRST,SECOND,TEAM1,TEAM2);
+          ispis(FIRST,SECOND,TEAM1,TEAM2,RESULT1,RESULT2);
           FLASH = 1;
           TURN = 0;
           }
+          delay(DELAY);
           break;
-        case BUTTON_RED:
+          case BUTTON_RED:
             setColor(255,0,0);
-            lcd.setCursor(0,3);
-            lcd.print("ADUT JE CRVENA ");
+            lcd.setCursor(0,0);
+            lcd.print("ADUT: CRVENA ");
             FLASH = 0;
-//            delay(DELAY);
+            delay(DELAY);
             break;
           case BUTTON_GREEN:
             setColor(0,255,0);
-            lcd.setCursor(0,3);
-            lcd.print("ADUT JE ZELENA ");
+            lcd.setCursor(0,0);
+            lcd.print("ADUT: ZELENA ");
             FLASH = 0;
-//           delay(DELAY);
+           delay(DELAY);
             break;
           case BUTTON_YELLOW:
             setColor(255,255,0);
-            lcd.setCursor(0,3);
-            lcd.print("ADUT JE ZIR    ");
+            lcd.setCursor(0,0);
+            lcd.print("ADUT: ZIR    ");
             FLASH = 0;
-//            delay(DELAY);
+            delay(DELAY);
             break;
           case BUTTON_BLUE:
             setColor(0,0,255);
-            lcd.setCursor(0,3);
-            lcd.print("ADUT JE BUNDEVA");
+            lcd.setCursor(0,0);
+            lcd.print("ADUT: BUNDEVA");
             FLASH = 0;
             delay(DELAY);
             break;
-          case BUTTON_CH_PLUS:
-            TEAM1++;
-            lcd.setCursor(0,0);
-            lcd.print("MI: ");
-            lcd.print(TEAM1);
-            lcd.print("  ");
-            setColor(255,0,255);
-            delay(DELAY);
-            setColor(0,0,0);
+//          case BUTTON_CH_PLUS:
+//            TEAM1++;
+//            setColor(255,0,255);
+//            delay(DELAY);
+//            setColor(0,0,0);
+//            break;
+//          case BUTTON_CH_MINUS:
+//            if(TEAM1==0) break;
+//            TEAM1--;
+//            setColor(255,0,255);
+//            delay(DELAY);
+//            setColor(0,0,0);
+//            break;
+//          case BUTTON_VOL_PLUS:
+//            TEAM2++;
+//            setColor(255,0,255);
+//            delay(DELAY);
+//            setColor(0,0,0);
+//            break;
+//          case BUTTON_VOL_MINUS:
+//            if(TEAM2==0) break;
+//            TEAM2--;
+//            setColor(255,0,255);
+//            delay(DELAY);
+//            setColor(0,0,0);
+//            break;
+          case BUTTON_LEFT:
+            RESULT1 = RESULT1 + upis();
+            lcd.setCursor(16,1);
+            lcd.print(RESULT1);
             break;
-          case BUTTON_CH_MINUS:
-            if(TEAM1==0) break;
-            TEAM1--;
-            lcd.setCursor(0,0);
-            lcd.print("MI: ");
-            lcd.print(TEAM1);
-            lcd.print("  ");
-            setColor(255,0,255);
-            delay(DELAY);
-            setColor(0,0,0);
-            break;
-          case BUTTON_VOL_PLUS:
-            TEAM2++;
-            lcd.setCursor(10,0);
-            lcd.print("VI: ");
-            lcd.print(TEAM2);
-            lcd.print("  ");
-            setColor(255,0,255);
-            delay(DELAY);
-            setColor(0,0,0);
-            break;
-          case BUTTON_VOL_MINUS:
-            if(TEAM2==0) break;
-            TEAM2--;
-            lcd.setCursor(10,0);
-            lcd.print("VI: ");
-            lcd.print(TEAM2);
-            lcd.print("  ");
-            setColor(255,0,255);
-            delay(DELAY);
-            setColor(0,0,0);
+          case BUTTON_RIGHT:
+            RESULT2 = RESULT2 + upis();
+            lcd.setCursor(16,3);
+            lcd.print(RESULT2);
             break;
         }
       IrReceiver.resume();
@@ -305,20 +321,150 @@ void setColor(int red, int green, int blue) {
   analogWrite(RGB3, blue);
   }
 
-void ispis(const char *SHUFFLES, const char *PLAYS, int TEAM01, int TEAM02) {
+void ispis(const char *SHUFFLES, const char *PLAYS, int TEAM01, int TEAM02, int RES01, int RES02) {
   setColor(0,0,0);
   lcd.clear();
   lcd.setCursor(0,0);
-  lcd.print("MI: ");
-  lcd.print(TEAM01);
-  lcd.setCursor(10,0);
-  lcd.print("VI: ");
-  lcd.print(TEAM02);
-  lcd.setCursor(0,1);
-  lcd.print(SHUFFLES);
-  lcd.print(" MIJESA");
+  lcd.print("ADUT: ???");
   lcd.setCursor(0,2);
+  lcd.print("MUSS: ");
+  lcd.print(SHUFFLES);
+  lcd.setCursor(0,1);
+  lcd.print("PRVI: ");
   lcd.print(PLAYS);
-  lcd.print(" IGRA PRVI");
+  lcd.setCursor(0,3);
+  lcd.print("UNOS: ");
+  lcd.setCursor(14,0);
+  lcd.print("MI: ");
+  lcd.setCursor(18,0);
+  lcd.print(TEAM01);
+  lcd.setCursor(16,1);
+  lcd.print(RES01);
+  lcd.setCursor(14,2);
+  lcd.print("VI: ");
+  lcd.setCursor(18,2);
+  lcd.print(TEAM02);
+  lcd.setCursor(16,3);
+  lcd.print(RES02);
 //  delay(50);
+}
+
+int upis() {                            // result input function
+  int RESULT = 0;                       // result
+  int DECIMAL = 0;                      // number of decimals
+  int TRIGGER = 0;                
+  lcd.setCursor(6,3);
+  lcd.print("     ");
+  lcd.setCursor(6,3);
+  lcd.blink();
+  while(TRIGGER != 1) {
+    if (IrReceiver.decode()) {
+      switch(IrReceiver.decodedIRData.command) {
+        case BUTTON_ONE:
+          if(DECIMAL == 3) break;
+          if(DECIMAL > 0) RESULT = RESULT * 10;
+          RESULT = RESULT + 1;
+          DECIMAL++;
+          lcd.setCursor(6,3);
+          lcd.print(RESULT);
+          delay(DELAY);
+          break;
+        case BUTTON_TWO:
+          if(DECIMAL == 3) break;
+          if(DECIMAL > 0) RESULT = RESULT * 10;
+          RESULT = RESULT + 2;
+          DECIMAL++;
+          lcd.setCursor(6,3);
+          lcd.print(RESULT);
+          delay(DELAY);
+          break;
+        case BUTTON_THREE:
+          if(DECIMAL == 3) break;
+          if(DECIMAL > 0) RESULT = RESULT * 10;
+          RESULT = RESULT + 3;
+          DECIMAL++;
+          lcd.setCursor(6,3);
+          lcd.print(RESULT);
+          delay(DELAY);
+          break;
+        case BUTTON_FOUR:
+          if(DECIMAL == 3) break;
+          if(DECIMAL > 0) RESULT = RESULT * 10;
+          RESULT = RESULT + 4;
+          DECIMAL++;
+          lcd.setCursor(6,3);
+          lcd.print(RESULT);
+          delay(DELAY);
+          break;
+        case BUTTON_FIVE:
+          if(DECIMAL == 3) break;
+          if(DECIMAL > 0) RESULT = (RESULT * 10);
+          RESULT = RESULT + 5;
+          DECIMAL++;
+          lcd.setCursor(6,3);
+          lcd.print(RESULT);
+          delay(DELAY);
+          break;
+        case BUTTON_SIX:
+          if(DECIMAL == 3) break;
+          if(DECIMAL > 0) RESULT = RESULT * 10;
+          RESULT = RESULT + 6;
+          DECIMAL++;
+          lcd.setCursor(6,3);
+          lcd.print(RESULT);
+          delay(DELAY);
+          break;
+        case BUTTON_SEVEN:
+          if(DECIMAL == 3) break;
+          if(DECIMAL > 0) RESULT = RESULT * 10;
+          RESULT = RESULT + 7;
+          DECIMAL++;
+          lcd.setCursor(6,3);
+          lcd.print(RESULT);
+          delay(DELAY);
+          break;
+        case BUTTON_EIGHT:
+          if(DECIMAL == 3) break;
+          if(DECIMAL > 0) RESULT = RESULT * 10;
+          RESULT = RESULT + 8;
+          DECIMAL++;
+          lcd.setCursor(6,3);
+          lcd.print(RESULT);
+          delay(DELAY);
+          break;
+        case BUTTON_NINE:
+          if(DECIMAL == 3) break;
+          if(DECIMAL > 0) RESULT = RESULT * 10;
+          RESULT = RESULT + 9;
+          DECIMAL++;
+          lcd.setCursor(6,3);
+          lcd.print(RESULT);
+          delay(DELAY);
+          break;
+        case BUTTON_ZERO:
+          if(DECIMAL == 3) break;
+          if(DECIMAL > 0) RESULT = RESULT * 10;
+          DECIMAL++;
+          lcd.setCursor(6,3);
+          lcd.print(RESULT);
+          delay(DELAY);
+          break;
+        case BUTTON_EXIT:
+          RESULT = 0;
+          DECIMAL = 0;
+          lcd.setCursor(6,3);
+          lcd.print("     ");
+          lcd.setCursor(6,3);
+          delay(DELAY);
+          break;
+        case BUTTON_OK:
+          TRIGGER = 1;
+          delay(DELAY);
+          break;
+      }
+      IrReceiver.resume();
+    }
+  }
+  lcd.noBlink();
+  return RESULT;
 }
