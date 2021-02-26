@@ -1,9 +1,9 @@
 // Belot Master 2k
-// V0.24
-// 22.02.2021.
-// Changes since V0.23:
-// - rearranged the main screen data display
-// - added the TOTAL variable for the total hand points
+// V0.25
+// 26.02.2021.
+// Changes since V0.24:
+// - added automatic result calculation after either team´s result has been entered
+// - changed some output text to lower case
 
 #define DECODE_NEC 1                    // IR remote protocol definition
 #define MARK_EXCESS_MICROS 20           // Compensation for the signal forming of different IR receiver modules
@@ -52,7 +52,8 @@ boolean CHECK4, CHECK5, CHECK6 = false;
 int HAND;                               // value of hand (straight, 4 of a kind etc)
 int TEAM1, TEAM2 = 0;                   // Overall result for both teams
 int RESULT1, RESULT2 = 0;               // Current result for both teams
-int TOTAL = 162;                        // total hand points
+int TRES1, TRES2 = 0;                     // Temporary result for both teams
+int TOTAL = 162;                        // Total hand points
 const char *FIRST, *SECOND, *THIRD, *FOURTH; // Pointers to players
 const char *P1 = "FAKI  ";                // Players´ names
 const char *P2 = "GELAS ";
@@ -73,7 +74,7 @@ void setup() {
   lcd.setCursor(2,1);
   lcd.print("BELOT MASTER 2k");
   lcd.setCursor(7,2);
-  lcd.print("V 0.24");
+  lcd.print("V 0.25");
   lcd.setCursor(3,3);
   lcd.print("M/F SCUM 2021.");
   setColor(0,0,0);                      // Turn the RGB LED off
@@ -215,6 +216,8 @@ void loop() {
       case BUTTON_OK:
         TURN++;
         TOTAL = 162;
+        TRES1 = 0;
+        TRES2 = 0;
         if(RESULT1>1000 & RESULT1>RESULT2) {
           TEAM1++;
           RESULT1 = 0;
@@ -258,89 +261,73 @@ void loop() {
           }
           delay(DELAY);
           break;
-          case BUTTON_RED:
-            setColor(255,0,0);
-            lcd.setCursor(12,3);
-            lcd.print("CRVENA ");
-            FLASH = false;
-            delay(DELAY);
-            break;
-          case BUTTON_GREEN:
-            setColor(0,255,0);
-            lcd.setCursor(12,3);
-            lcd.print("ZELENA ");
-            FLASH = false;
-            delay(DELAY);
-            break;
-          case BUTTON_YELLOW:
-            setColor(255,255,0);
-            lcd.setCursor(12,3);
-            lcd.print("ZIR    ");
-            FLASH = false;
-            delay(DELAY);
-            break;
-          case BUTTON_BLUE:
-            setColor(0,0,255);
-            lcd.setCursor(12,3);
-            lcd.print("BUNDEVA");
-            FLASH = false;
-            delay(DELAY);
-            break;
-//          case BUTTON_CH_PLUS:
-//            TEAM1++;
-//            setColor(255,0,255);
-//            delay(DELAY);
-//            setColor(0,0,0);
-//            break;
-//          case BUTTON_CH_MINUS:
-//            if(TEAM1==0) break;
-//            TEAM1--;
-//            setColor(255,0,255);
-//            delay(DELAY);
-//            setColor(0,0,0);
-//            break;
-//          case BUTTON_VOL_PLUS:
-//            TEAM2++;
-//            setColor(255,0,255);
-//            delay(DELAY);
-//            setColor(0,0,0);
-//            break;
-//          case BUTTON_VOL_MINUS:
-//            if(TEAM2==0) break;
-//            TEAM2--;
-//            setColor(255,0,255);
-//            delay(DELAY);
-//            setColor(0,0,0);
-//            break;
-          case BUTTON_EPG:
-            HAND=upis(12,1);
-            TOTAL = TOTAL + HAND;
-            lcd.setCursor(12,1);
-            lcd.print(HAND);
-            lcd.setCursor(17,2);
-            lcd.print(TOTAL);
-            break;
-          case BUTTON_FAV:
-            HAND=upis(16,1);
-            TOTAL = TOTAL + HAND;
-            lcd.setCursor(16,1);
-            lcd.print(HAND);
-            lcd.setCursor(17,2);
-            lcd.print(TOTAL);
-            break;
-          case BUTTON_LEFT:
-            RESULT1 = RESULT1 + upis(0,1);
-            lcd.setCursor(0,1);
-            lcd.print(RESULT1);
-            break;
-          case BUTTON_RIGHT:
-            RESULT2 = RESULT2 + upis(6,1);
-            lcd.setCursor(6,1);
-            lcd.print(RESULT2);
-            break;
-        }
-      IrReceiver.resume();
+      case BUTTON_RED:
+        setColor(255,0,0);
+        lcd.setCursor(12,3);
+        lcd.print("CRVENA ");
+        FLASH = false;
+        delay(DELAY);
+        break;
+      case BUTTON_GREEN:
+        setColor(0,255,0);
+        lcd.setCursor(12,3);
+        lcd.print("ZELENA ");
+        FLASH = false;
+        delay(DELAY);
+        break;
+      case BUTTON_YELLOW:
+        setColor(255,255,0);
+        lcd.setCursor(12,3);
+        lcd.print("ZIR    ");
+        FLASH = false;
+        delay(DELAY);
+        break;
+      case BUTTON_BLUE:
+        setColor(0,0,255);
+        lcd.setCursor(12,3);
+        lcd.print("BUNDEVA");
+        FLASH = false;
+        delay(DELAY);
+        break;
+      case BUTTON_EPG:
+        HAND=upis(12,1);
+        TOTAL = TOTAL + HAND;
+        lcd.setCursor(12,1);
+        lcd.print(HAND);
+        lcd.setCursor(17,2);
+        lcd.print(TOTAL);
+        break;
+      case BUTTON_FAV:
+        HAND=upis(16,1);
+        TOTAL = TOTAL + HAND;
+        lcd.setCursor(16,1);
+        lcd.print(HAND);
+        lcd.setCursor(17,2);
+        lcd.print(TOTAL);
+        break;
+      case BUTTON_LEFT:
+        TRES1 = upis(0,1);
+        TRES2 = TOTAL - TRES1;
+        RESULT1 = RESULT1 + TRES1;
+        RESULT2 = RESULT2 + TRES2;
+        lcd.setCursor(0,1);
+        lcd.print(RESULT1);
+        lcd.setCursor(6,1);
+        lcd.print(RESULT2);
+        break;
+      case BUTTON_RIGHT:
+        TRES2 = upis(6,1);
+        TRES1 = TOTAL - TRES2;
+        RESULT2 = RESULT2 + TRES2;
+        RESULT1 = RESULT1 + TRES1;
+        lcd.setCursor(0,1);
+        lcd.print(RESULT1);
+        lcd.setCursor(6,1);
+        lcd.print(RESULT2);
+        break;
       }
+  IrReceiver.resume();
+  }
 if(FiveSeconds.check() & FLASH == true) {
   setColor(255,255,255);
   delay(DELAY);
@@ -368,8 +355,8 @@ void ispis(const char *SHUFFLES, const char *PLAYS, int TEAM01, int TEAM02, int 
   lcd.print(TEAM02);
   lcd.setCursor(11,0);
   lcd.print("|");
-  lcd.setCursor(12,0);
-  lcd.print("ZVANJA");
+  lcd.setCursor(13,0);
+  lcd.print("zvanja");
   lcd.setCursor(0,1);
   lcd.print(RES01);
   lcd.setCursor(6,1);
@@ -377,19 +364,19 @@ void ispis(const char *SHUFFLES, const char *PLAYS, int TEAM01, int TEAM02, int 
   lcd.setCursor(11,1);
   lcd.print("|");
   lcd.setCursor(0,2);
-  lcd.print("PRVI ");
+  lcd.print("prvi ");
   lcd.print(PLAYS);
   lcd.setCursor(11,2);
   lcd.print("|");
-  lcd.print("IGRA ");
+  lcd.print("igra ");
   lcd.print(TOTAL);
   lcd.setCursor(0,3);
-  lcd.print("MUSS ");
+  lcd.print("muss ");
   lcd.print(SHUFFLES);
   lcd.setCursor(11,3);
   lcd.print("|");
   lcd.setCursor(12,3);
-  lcd.print("ADUT ?");
+  lcd.print("adut ?");
 }
 
 int upis(int X, int Y) {                            // result input function
