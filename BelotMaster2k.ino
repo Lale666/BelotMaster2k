@@ -1,12 +1,9 @@
 // Belot Master 2k
-// V0.23
-// 20.02.2021.
-// Changes since V0.22:
-// - added flash LED effect every 5 sec until the trump card is chosen
-// - changed FLASH, CHECK1-6 and TRIGGER variables from int to boolean
-// - changed flash LED color to pure white
-// - on the players selection screen, already selected players are now maked with X
-// - added hand values to the main screen
+// V0.24
+// 22.02.2021.
+// Changes since V0.23:
+// - rearranged the main screen data display
+// - added the TOTAL variable for the total hand points
 
 #define DECODE_NEC 1                    // IR remote protocol definition
 #define MARK_EXCESS_MICROS 20           // Compensation for the signal forming of different IR receiver modules
@@ -50,19 +47,19 @@ const int RGB3 = 6;                     // RGB LED 3 on pin 6
 const int DELAY = 150;
 int TURN = 0;                           // Player´s turn 
 boolean FLASH = true;                   // LED Flash
-// int TRUMP = 0;                          // Trump card color
 boolean CHECK1, CHECK2, CHECK3 = false;         // Checking if the player has been already selected
 boolean CHECK4, CHECK5, CHECK6 = false;
 int HAND;                               // value of hand (straight, 4 of a kind etc)
 int TEAM1, TEAM2 = 0;                   // Overall result for both teams
 int RESULT1, RESULT2 = 0;               // Current result for both teams
+int TOTAL = 162;                        // total hand points
 const char *FIRST, *SECOND, *THIRD, *FOURTH; // Pointers to players
-const char *P1 = "FAKI";                // Players´ names
-const char *P2 = "GELAS";
-const char *P3 = "KRAJA";
-const char *P4 = "LALE";
-const char *P5 = "SECA";
-const char *P6 = "SKRGA";
+const char *P1 = "FAKI  ";                // Players´ names
+const char *P2 = "GELAS ";
+const char *P3 = "KRAJA ";
+const char *P4 = "LALE  ";
+const char *P5 = "SECA  ";
+const char *P6 = "SKRGA ";
 
 void setup() {
   pinMode (RGB1,OUTPUT);                // Blue color
@@ -76,7 +73,7 @@ void setup() {
   lcd.setCursor(2,1);
   lcd.print("BELOT MASTER 2k");
   lcd.setCursor(7,2);
-  lcd.print("V 0.23");
+  lcd.print("V 0.24");
   lcd.setCursor(3,3);
   lcd.print("M/F SCUM 2021.");
   setColor(0,0,0);                      // Turn the RGB LED off
@@ -89,17 +86,17 @@ void setup() {
   lcd.print("1) ");
   lcd.print(P1);
   lcd.setCursor(0,2);
-  lcd.print("3) ");
-  lcd.print(P3);
-  lcd.setCursor(0,3);
-  lcd.print("5) ");
-  lcd.print(P5);
-  lcd.setCursor(11,1);
   lcd.print("2) ");
   lcd.print(P2);
-  lcd.setCursor(11,2);
+  lcd.setCursor(0,3);
+  lcd.print("3) ");
+  lcd.print(P3);
+  lcd.setCursor(11,1);
   lcd.print("4) ");
   lcd.print(P4);
+  lcd.setCursor(11,2);
+  lcd.print("5) ");
+  lcd.print(P5);
   lcd.setCursor(11,3);
   lcd.print("6) ");
   lcd.print(P6);
@@ -138,7 +135,7 @@ void setup() {
             setColor(0,0,0);
             TURN++;
             CHECK2=true;                    // Player 2 have been selected
-            lcd.setCursor(11,1);
+            lcd.setCursor(0,2);
             lcd.print("X");
             break;
           case BUTTON_THREE:
@@ -153,7 +150,7 @@ void setup() {
             setColor(0,0,0);
             TURN++;
             CHECK3=true;                   // Player 3 have been selected
-            lcd.setCursor(0,2);
+            lcd.setCursor(0,3);
             lcd.print("X");
             break;
           case BUTTON_FOUR:
@@ -168,7 +165,7 @@ void setup() {
             setColor(0,0,0);
             TURN++;
             CHECK4=true;                     // Player 4 have been selected
-            lcd.setCursor(11,2);
+            lcd.setCursor(11,1);
             lcd.print("X");
             break;
           case BUTTON_FIVE:
@@ -183,7 +180,7 @@ void setup() {
             setColor(0,0,0);
             TURN++;
             CHECK5=true;                    // Player 1 have been selected
-            lcd.setCursor(0,3);
+            lcd.setCursor(11,2);
             lcd.print("X");
             break;
           case BUTTON_SIX:
@@ -217,6 +214,7 @@ void loop() {
     switch(IrReceiver.decodedIRData.command) {
       case BUTTON_OK:
         TURN++;
+        TOTAL = 162;
         if(RESULT1>1000 & RESULT1>RESULT2) {
           TEAM1++;
           RESULT1 = 0;
@@ -262,29 +260,29 @@ void loop() {
           break;
           case BUTTON_RED:
             setColor(255,0,0);
-            lcd.setCursor(0,0);
-            lcd.print("ADUT CRVENA ");
+            lcd.setCursor(12,3);
+            lcd.print("CRVENA ");
             FLASH = false;
             delay(DELAY);
             break;
           case BUTTON_GREEN:
             setColor(0,255,0);
-            lcd.setCursor(0,0);
-            lcd.print("ADUT ZELENA ");
+            lcd.setCursor(12,3);
+            lcd.print("ZELENA ");
             FLASH = false;
             delay(DELAY);
             break;
           case BUTTON_YELLOW:
             setColor(255,255,0);
-            lcd.setCursor(0,0);
-            lcd.print("ADUT ZIR    ");
+            lcd.setCursor(12,3);
+            lcd.print("ZIR    ");
             FLASH = false;
             delay(DELAY);
             break;
           case BUTTON_BLUE:
             setColor(0,0,255);
-            lcd.setCursor(0,0);
-            lcd.print("ADUT BUNDEVA");
+            lcd.setCursor(12,3);
+            lcd.print("BUNDEVA");
             FLASH = false;
             delay(DELAY);
             break;
@@ -315,23 +313,29 @@ void loop() {
 //            setColor(0,0,0);
 //            break;
           case BUTTON_EPG:
-            HAND=upis();
+            HAND=upis(12,1);
+            TOTAL = TOTAL + HAND;
             lcd.setCursor(12,1);
             lcd.print(HAND);
+            lcd.setCursor(17,2);
+            lcd.print(TOTAL);
             break;
           case BUTTON_FAV:
-            HAND=upis();
-            lcd.setCursor(12,3);
+            HAND=upis(16,1);
+            TOTAL = TOTAL + HAND;
+            lcd.setCursor(16,1);
             lcd.print(HAND);
+            lcd.setCursor(17,2);
+            lcd.print(TOTAL);
             break;
           case BUTTON_LEFT:
-            RESULT1 = RESULT1 + upis();
-            lcd.setCursor(16,1);
+            RESULT1 = RESULT1 + upis(0,1);
+            lcd.setCursor(0,1);
             lcd.print(RESULT1);
             break;
           case BUTTON_RIGHT:
-            RESULT2 = RESULT2 + upis();
-            lcd.setCursor(16,3);
+            RESULT2 = RESULT2 + upis(6,1);
+            lcd.setCursor(6,1);
             lcd.print(RESULT2);
             break;
         }
@@ -356,37 +360,45 @@ void setColor(int red, int green, int blue) {
 void ispis(const char *SHUFFLES, const char *PLAYS, int TEAM01, int TEAM02, int RES01, int RES02) {
   setColor(0,0,0);
   lcd.clear();
-  lcd.setCursor(0,0);
-  lcd.print("ADUT ???");
-  lcd.setCursor(0,2);
-  lcd.print("MUSS ");
-  lcd.print(SHUFFLES);
+  lcd.home();
+  lcd.print("MI ");
+  lcd.print(TEAM01);
+  lcd.setCursor(6,0);
+  lcd.print("VI ");
+  lcd.print(TEAM02);
+  lcd.setCursor(11,0);
+  lcd.print("|");
+  lcd.setCursor(12,0);
+  lcd.print("ZVANJA");
   lcd.setCursor(0,1);
+  lcd.print(RES01);
+  lcd.setCursor(6,1);
+  lcd.print(RES02);
+  lcd.setCursor(11,1);
+  lcd.print("|");
+  lcd.setCursor(0,2);
   lcd.print("PRVI ");
   lcd.print(PLAYS);
+  lcd.setCursor(11,2);
+  lcd.print("|");
+  lcd.print("IGRA ");
+  lcd.print(TOTAL);
   lcd.setCursor(0,3);
-  lcd.print("UNOS ");
-  lcd.setCursor(13,0);
-  lcd.print("Z MI ");
-  lcd.setCursor(18,0);
-  lcd.print(TEAM01);
-  lcd.setCursor(16,1);
-  lcd.print(RES01);
-  lcd.setCursor(15,2);
-  lcd.print("VI ");
-  lcd.setCursor(18,2);
-  lcd.print(TEAM02);
-  lcd.setCursor(16,3);
-  lcd.print(RES02);
+  lcd.print("MUSS ");
+  lcd.print(SHUFFLES);
+  lcd.setCursor(11,3);
+  lcd.print("|");
+  lcd.setCursor(12,3);
+  lcd.print("ADUT ?");
 }
 
-int upis() {                            // result input function
+int upis(int X, int Y) {                            // result input function
   int RESULT = 0;                       // result
   int DECIMAL = 0;                      // number of decimals
   boolean TRIGGER = false;                
-  lcd.setCursor(5,3);
-  lcd.print("     ");
-  lcd.setCursor(5,3);
+  lcd.setCursor(X,Y);
+  lcd.print("   ");
+  lcd.setCursor(X,Y);
   lcd.blink();
   while(TRIGGER != true) {
     if (IrReceiver.decode()) {
@@ -396,7 +408,7 @@ int upis() {                            // result input function
           if(DECIMAL > 0) RESULT = RESULT * 10;
           RESULT = RESULT + 1;
           DECIMAL++;
-          lcd.setCursor(5,3);
+          lcd.setCursor(X,Y);
           lcd.print(RESULT);
           delay(DELAY);
           break;
@@ -405,7 +417,7 @@ int upis() {                            // result input function
           if(DECIMAL > 0) RESULT = RESULT * 10;
           RESULT = RESULT + 2;
           DECIMAL++;
-          lcd.setCursor(5,3);
+          lcd.setCursor(X,Y);
           lcd.print(RESULT);
           delay(DELAY);
           break;
@@ -414,7 +426,7 @@ int upis() {                            // result input function
           if(DECIMAL > 0) RESULT = RESULT * 10;
           RESULT = RESULT + 3;
           DECIMAL++;
-          lcd.setCursor(5,3);
+          lcd.setCursor(X,Y);
           lcd.print(RESULT);
           delay(DELAY);
           break;
@@ -423,7 +435,7 @@ int upis() {                            // result input function
           if(DECIMAL > 0) RESULT = RESULT * 10;
           RESULT = RESULT + 4;
           DECIMAL++;
-          lcd.setCursor(5,3);
+          lcd.setCursor(X,Y);
           lcd.print(RESULT);
           delay(DELAY);
           break;
@@ -432,7 +444,7 @@ int upis() {                            // result input function
           if(DECIMAL > 0) RESULT = (RESULT * 10);
           RESULT = RESULT + 5;
           DECIMAL++;
-          lcd.setCursor(5,3);
+          lcd.setCursor(X,Y);
           lcd.print(RESULT);
           delay(DELAY);
           break;
@@ -441,7 +453,7 @@ int upis() {                            // result input function
           if(DECIMAL > 0) RESULT = RESULT * 10;
           RESULT = RESULT + 6;
           DECIMAL++;
-          lcd.setCursor(5,3);
+         lcd.setCursor(X,Y);
           lcd.print(RESULT);
           delay(DELAY);
           break;
@@ -450,7 +462,7 @@ int upis() {                            // result input function
           if(DECIMAL > 0) RESULT = RESULT * 10;
           RESULT = RESULT + 7;
           DECIMAL++;
-          lcd.setCursor(5,3);
+          lcd.setCursor(X,Y);
           lcd.print(RESULT);
           delay(DELAY);
           break;
@@ -459,7 +471,7 @@ int upis() {                            // result input function
           if(DECIMAL > 0) RESULT = RESULT * 10;
           RESULT = RESULT + 8;
           DECIMAL++;
-          lcd.setCursor(5,3);
+          lcd.setCursor(X,Y);
           lcd.print(RESULT);
           delay(DELAY);
           break;
@@ -468,7 +480,7 @@ int upis() {                            // result input function
           if(DECIMAL > 0) RESULT = RESULT * 10;
           RESULT = RESULT + 9;
           DECIMAL++;
-          lcd.setCursor(5,3);
+          lcd.setCursor(X,Y);
           lcd.print(RESULT);
           delay(DELAY);
           break;
@@ -476,20 +488,22 @@ int upis() {                            // result input function
           if(DECIMAL == 3) break;
           if(DECIMAL > 0) RESULT = RESULT * 10;
           DECIMAL++;
-          lcd.setCursor(5,3);
+          lcd.setCursor(X,Y);
           lcd.print(RESULT);
           delay(DELAY);
           break;
         case BUTTON_EXIT:
           RESULT = 0;
           DECIMAL = 0;
-          lcd.setCursor(5,3);
-          lcd.print("     ");
-          lcd.setCursor(5,3);
+          lcd.setCursor(X,Y);
+          lcd.print("   ");
+          lcd.setCursor(X,Y);
           delay(DELAY);
           break;
         case BUTTON_OK:
           TRIGGER = true;
+          lcd.setCursor(X,Y);
+          lcd.print("   ");
           delay(DELAY);
           break;
       }
