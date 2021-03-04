@@ -1,9 +1,9 @@
 // Belot Master 2k
-// V0.25
-// 26.02.2021.
-// Changes since V0.24:
-// - added automatic result calculation after either team´s result has been entered
-// - changed some output text to lower case
+// V0.26
+// 04.03.2021.
+// Changes since V0.25:
+// - improved the EXIT function to ignore any input that might have been entered by mistake
+// - improved the display of values for result and hand after the EXIT function was used
 
 #define DECODE_NEC 1                    // IR remote protocol definition
 #define MARK_EXCESS_MICROS 20           // Compensation for the signal forming of different IR receiver modules
@@ -49,10 +49,11 @@ int TURN = 0;                           // Player´s turn
 boolean FLASH = true;                   // LED Flash
 boolean CHECK1, CHECK2, CHECK3 = false;         // Checking if the player has been already selected
 boolean CHECK4, CHECK5, CHECK6 = false;
-int HAND;                               // value of hand (straight, 4 of a kind etc)
+int HAND1, HAND2 = 0;                   // Values of hand for both teams (straight, 4 of a kind etc)
+int THAND1, THAND2 = 0;                 // Temporary values of hand for both teams
 int TEAM1, TEAM2 = 0;                   // Overall result for both teams
 int RESULT1, RESULT2 = 0;               // Current result for both teams
-int TRES1, TRES2 = 0;                     // Temporary result for both teams
+int TRES1, TRES2 = 0;                   // Temporary result for both teams
 int TOTAL = 162;                        // Total hand points
 const char *FIRST, *SECOND, *THIRD, *FOURTH; // Pointers to players
 const char *P1 = "FAKI  ";                // Players´ names
@@ -74,7 +75,7 @@ void setup() {
   lcd.setCursor(2,1);
   lcd.print("BELOT MASTER 2k");
   lcd.setCursor(7,2);
-  lcd.print("V 0.25");
+  lcd.print("V 0.26");
   lcd.setCursor(3,3);
   lcd.print("M/F SCUM 2021.");
   setColor(0,0,0);                      // Turn the RGB LED off
@@ -218,6 +219,10 @@ void loop() {
         TOTAL = 162;
         TRES1 = 0;
         TRES2 = 0;
+        HAND1 = 0;
+        HAND2 = 0;
+        THAND1 = 0;
+        THAND2 = 0;
         if(RESULT1>1000 & RESULT1>RESULT2) {
           TEAM1++;
           RESULT1 = 0;
@@ -290,26 +295,38 @@ void loop() {
         delay(DELAY);
         break;
       case BUTTON_EPG:
-        HAND=upis(12,1);
-        TOTAL = TOTAL + HAND;
+        THAND1 = upis(12,1);
+        if(THAND1 == 1) THAND1 = 0;
+        if(THAND1 != 1) TOTAL = TOTAL + THAND1;
+        HAND1 = HAND1 + THAND1;
         lcd.setCursor(12,1);
-        lcd.print(HAND);
+        lcd.print("   ");
+        lcd.setCursor(12,1);
+        lcd.print(HAND1);
         lcd.setCursor(17,2);
         lcd.print(TOTAL);
         break;
       case BUTTON_FAV:
-        HAND=upis(16,1);
-        TOTAL = TOTAL + HAND;
+        THAND2 = upis(16,1);
+        if(THAND2 == 1) THAND2 = 0;
+        if(THAND2 != 1) TOTAL = TOTAL + THAND2;
+        HAND2 = HAND2 + THAND2;
         lcd.setCursor(16,1);
-        lcd.print(HAND);
+        lcd.print("   ");
+        lcd.setCursor(16,1);
+        lcd.print(HAND2);
         lcd.setCursor(17,2);
         lcd.print(TOTAL);
         break;
       case BUTTON_LEFT:
         TRES1 = upis(0,1);
-        TRES2 = TOTAL - TRES1;
-        RESULT1 = RESULT1 + TRES1;
-        RESULT2 = RESULT2 + TRES2;
+        if(TRES1 != 1) {
+          TRES2 = TOTAL - TRES1;
+          RESULT1 = RESULT1 + TRES1;
+          RESULT2 = RESULT2 + TRES2;
+        }
+        lcd.setCursor(0,1);
+        lcd.print("   ");
         lcd.setCursor(0,1);
         lcd.print(RESULT1);
         lcd.setCursor(6,1);
@@ -317,11 +334,15 @@ void loop() {
         break;
       case BUTTON_RIGHT:
         TRES2 = upis(6,1);
-        TRES1 = TOTAL - TRES2;
-        RESULT2 = RESULT2 + TRES2;
-        RESULT1 = RESULT1 + TRES1;
+        if(TRES2 != 1) {
+          TRES1 = TOTAL - TRES2;
+          RESULT2 = RESULT2 + TRES2;
+          RESULT1 = RESULT1 + TRES1;
+        }
         lcd.setCursor(0,1);
         lcd.print(RESULT1);
+        lcd.setCursor(6,1);
+        lcd.print("   ");
         lcd.setCursor(6,1);
         lcd.print(RESULT2);
         break;
@@ -480,11 +501,11 @@ int upis(int X, int Y) {                            // result input function
           delay(DELAY);
           break;
         case BUTTON_EXIT:
-          RESULT = 0;
-          DECIMAL = 0;
-          lcd.setCursor(X,Y);
-          lcd.print("   ");
-          lcd.setCursor(X,Y);
+          RESULT = 1;
+          TRIGGER = true;
+//          lcd.setCursor(X,Y);
+//          lcd.print("   ");
+//          lcd.setCursor(X,Y);
           delay(DELAY);
           break;
         case BUTTON_OK:
