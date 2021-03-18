@@ -1,9 +1,8 @@
 // Belot Master 2k
-// V0.26
-// 04.03.2021.
-// Changes since V0.25:
-// - improved the EXIT function to ignore any input that might have been entered by mistake
-// - improved the display of values for result and hand after the EXIT function was used
+// V0.27
+// 11.03.2021.
+// Changes since V0.26:
+// - after either team´s result is entered, the other team´s result is automatically calculated, including the hand values, and the screen is ready for new game
 
 #define DECODE_NEC 1                    // IR remote protocol definition
 #define MARK_EXCESS_MICROS 20           // Compensation for the signal forming of different IR receiver modules
@@ -28,10 +27,10 @@
 #define BUTTON_EXIT       0x5
 #define BUTTON_EPG        0x55
 #define BUTTON_FAV        0x15
-// #define BUTTON_CH_PLUS    0x4D
-// #define BUTTON_CH_MINUS   0x51
-// #define BUTTON_VOL_PLUS   0xD
-// #define BUTTON_VOL_MINUS  0x11
+#define BUTTON_CH_PLUS    0x4D
+#define BUTTON_CH_MINUS   0x51
+#define BUTTON_VOL_PLUS   0xD
+#define BUTTON_VOL_MINUS  0x11
 
 #include <LiquidCrystal_I2C.h>          // LCD I2C library
 LiquidCrystal_I2C lcd(0x27,20,4);       // Define 20x4 LCD screen
@@ -47,6 +46,7 @@ const int RGB3 = 6;                     // RGB LED 3 on pin 6
 const int DELAY = 150;
 int TURN = 0;                           // Player´s turn 
 boolean FLASH = true;                   // LED Flash
+boolean RESET = false;                  // A flag to reset all the temporary values
 boolean CHECK1, CHECK2, CHECK3 = false;         // Checking if the player has been already selected
 boolean CHECK4, CHECK5, CHECK6 = false;
 int HAND1, HAND2 = 0;                   // Values of hand for both teams (straight, 4 of a kind etc)
@@ -75,7 +75,7 @@ void setup() {
   lcd.setCursor(2,1);
   lcd.print("BELOT MASTER 2k");
   lcd.setCursor(7,2);
-  lcd.print("V 0.26");
+  lcd.print("V 0.27");
   lcd.setCursor(3,3);
   lcd.print("M/F SCUM 2021.");
   setColor(0,0,0);                      // Turn the RGB LED off
@@ -216,33 +216,6 @@ void loop() {
     switch(IrReceiver.decodedIRData.command) {
       case BUTTON_OK:
         TURN++;
-        TOTAL = 162;
-        TRES1 = 0;
-        TRES2 = 0;
-        HAND1 = 0;
-        HAND2 = 0;
-        THAND1 = 0;
-        THAND2 = 0;
-        if(RESULT1>1000 & RESULT1>RESULT2) {
-          TEAM1++;
-          RESULT1 = 0;
-          RESULT2 = 0;
-          }
-        if(RESULT1>1000 & RESULT1<RESULT2) {
-          TEAM2++;
-          RESULT1 = 0;
-          RESULT2 = 0;
-          }
-        if(RESULT2>1000 & RESULT2>RESULT1) {
-          TEAM2++;
-          RESULT1 = 0;
-          RESULT2 = 0;
-          }
-        if(RESULT2>1000 & RESULT2<RESULT1) {
-          TEAM1++;
-          RESULT1 = 0;
-          RESULT2 = 0;
-          }
         if(TURN==1) {
 //          zvuk1;
           ispis(SECOND,THIRD,TEAM1,TEAM2,RESULT1,RESULT2);
@@ -264,8 +237,9 @@ void loop() {
           FLASH = true;
           TURN = 0;
           }
-          delay(DELAY);
-          break;
+        delay(DELAY);
+        RESET = true;
+        break;
       case BUTTON_RED:
         setColor(255,0,0);
         lcd.setCursor(12,3);
@@ -320,6 +294,7 @@ void loop() {
         break;
       case BUTTON_LEFT:
         TRES1 = upis(0,1);
+        if(TRES1>TOTAL) TRES1 = 1;
         if(TRES1 != 1) {
           TRES2 = TOTAL - TRES1;
           RESULT1 = RESULT1 + TRES1;
@@ -331,9 +306,35 @@ void loop() {
         lcd.print(RESULT1);
         lcd.setCursor(6,1);
         lcd.print(RESULT2);
+        if(TRES1 == 1) {
+          TRES1 = 0;
+          break;
+        }
+        TURN++;
+        TOTAL = 162;
+        if(TURN==1) {
+          ispis(SECOND,THIRD,TEAM1,TEAM2,RESULT1,RESULT2);
+          FLASH = true;
+        }
+        if(TURN==2) {
+          ispis(THIRD,FOURTH,TEAM1,TEAM2,RESULT1,RESULT2);
+          FLASH = true;
+        }
+        if(TURN==3) {
+          ispis(FOURTH,FIRST,TEAM1,TEAM2,RESULT1,RESULT2);
+          FLASH = true;
+        }
+        if(TURN==4) {
+          ispis(FIRST,SECOND,TEAM1,TEAM2,RESULT1,RESULT2);
+          FLASH = true;
+          TURN = 0;
+        }
+        delay(DELAY);
+        RESET = true;
         break;
       case BUTTON_RIGHT:
         TRES2 = upis(6,1);
+        if(TRES2>TOTAL) TRES2 = 1;
         if(TRES2 != 1) {
           TRES1 = TOTAL - TRES2;
           RESULT2 = RESULT2 + TRES2;
@@ -345,6 +346,61 @@ void loop() {
         lcd.print("   ");
         lcd.setCursor(6,1);
         lcd.print(RESULT2);
+        if(TRES2 == 1) {
+          TRES2 = 0;
+          break;
+        }
+        TURN++;
+        TOTAL = 162;
+        if(TURN==1) {
+          ispis(SECOND,THIRD,TEAM1,TEAM2,RESULT1,RESULT2);
+          FLASH = true;
+        }
+        if(TURN==2) {
+          ispis(THIRD,FOURTH,TEAM1,TEAM2,RESULT1,RESULT2);
+          FLASH = true;
+        }
+        if(TURN==3) {
+          ispis(FOURTH,FIRST,TEAM1,TEAM2,RESULT1,RESULT2);
+          FLASH = true;
+        }
+        if(TURN==4) {
+          ispis(FIRST,SECOND,TEAM1,TEAM2,RESULT1,RESULT2);
+          FLASH = true;
+          TURN = 0;
+        }
+        delay(DELAY);
+        RESET = true;
+        break;
+      case BUTTON_CH_PLUS:
+        TEAM1++;
+        lcd.setCursor(3,0);
+        lcd.print(TEAM1);
+        delay(DELAY);
+        break;
+      case BUTTON_CH_MINUS:
+        TEAM1--;
+        if(TEAM1<0) TEAM1 = 0;
+        lcd.setCursor(3,0);
+        lcd.print("  ");
+        lcd.setCursor(3,0);
+        lcd.print(TEAM1);
+        delay(DELAY);
+        break;
+      case BUTTON_VOL_PLUS:
+        TEAM2++;
+        lcd.setCursor(9,0);
+        lcd.print(TEAM2);
+        delay(DELAY);
+        break;
+      case BUTTON_VOL_MINUS:
+        TEAM2--;
+        if(TEAM2<2) TEAM2 = 0;
+        lcd.setCursor(9,0);
+        lcd.print("  ");
+        lcd.setCursor(9,0);
+        lcd.print(TEAM2);
+        delay(DELAY);
         break;
       }
   IrReceiver.resume();
@@ -353,6 +409,40 @@ if(FiveSeconds.check() & FLASH == true) {
   setColor(255,255,255);
   delay(DELAY);
   setColor(0,0,0);
+  }
+if(RESULT1>1000 & RESULT1>RESULT2) {
+  TEAM1++;
+  RESULT1 = 0;
+  RESULT2 = 0;
+  RESET = true;
+  }
+if(RESULT1>1000 & RESULT1<RESULT2) {
+  TEAM2++;
+  RESULT1 = 0;
+  RESULT2 = 0;
+  RESET = true;
+  }
+if(RESULT2>1000 & RESULT2>RESULT1) {
+  TEAM2++;
+  RESULT1 = 0;
+  RESULT2 = 0;
+  RESET = true;
+  }
+if(RESULT2>1000 & RESULT2<RESULT1) {
+  TEAM1++;
+  RESULT1 = 0;
+  RESULT2 = 0;
+  RESET = true;
+  }
+if(RESET==true) {
+  TOTAL = 162;
+  TRES1 = 0;
+  TRES2 = 0;
+  HAND1 = 0;
+  HAND2 = 0;
+  THAND1 = 0;
+  THAND2 = 0;
+  RESET = false;
   }
 }
 
