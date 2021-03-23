@@ -1,8 +1,8 @@
 // Belot Master 2k
-// V0.27
-// 11.03.2021.
-// Changes since V0.26:
-// - after either team´s result is entered, the other team´s result is automatically calculated, including the hand values, and the screen is ready for new game
+// V0.28
+// 18.03.2021.
+// Changes since V0.27:
+// - added a screen that shows up after the game is over, showing which team won and with which result
 
 #define DECODE_NEC 1                    // IR remote protocol definition
 #define MARK_EXCESS_MICROS 20           // Compensation for the signal forming of different IR receiver modules
@@ -75,7 +75,7 @@ void setup() {
   lcd.setCursor(2,1);
   lcd.print("BELOT MASTER 2k");
   lcd.setCursor(7,2);
-  lcd.print("V 0.27");
+  lcd.print("V 0.28");
   lcd.setCursor(3,3);
   lcd.print("M/F SCUM 2021.");
   setColor(0,0,0);                      // Turn the RGB LED off
@@ -412,24 +412,28 @@ if(FiveSeconds.check() & FLASH == true) {
   }
 if(RESULT1>1000 & RESULT1>RESULT2) {
   TEAM1++;
+  pobjeda(RESULT1, RESULT2, true);
   RESULT1 = 0;
   RESULT2 = 0;
   RESET = true;
   }
 if(RESULT1>1000 & RESULT1<RESULT2) {
   TEAM2++;
+  pobjeda(RESULT1, RESULT2, false);
   RESULT1 = 0;
   RESULT2 = 0;
   RESET = true;
   }
 if(RESULT2>1000 & RESULT2>RESULT1) {
   TEAM2++;
+  pobjeda(RESULT1, RESULT2, false);
   RESULT1 = 0;
   RESULT2 = 0;
   RESET = true;
   }
 if(RESULT2>1000 & RESULT2<RESULT1) {
   TEAM1++;
+  pobjeda(RESULT1, RESULT2, true);
   RESULT1 = 0;
   RESULT2 = 0;
   RESET = true;
@@ -453,7 +457,23 @@ void setColor(int red, int green, int blue) {
   analogWrite(RGB1, red);
   analogWrite(RGB2, green);
   analogWrite(RGB3, blue);
-  }
+}
+
+void pobjeda(int RES1, int RES2, boolean TIM) {       // winning screen function
+  lcd.clear();
+  lcd.setCursor(4,0);
+  lcd.print("REZULTAT  JE");
+  lcd.setCursor(5,1);
+  lcd.print(RES1);
+  lcd.print(" : ");
+  lcd.print(RES2);
+  lcd.setCursor(2,2);
+  lcd.print("POBJEDA TIMA: ");
+  if(TIM == true) lcd.print("MI");
+  if(TIM == false) lcd.print("VI");
+  lcd.setCursor(0,3);
+  lcd.print("-> OK za nastavak <-");
+}
 
 void ispis(const char *SHUFFLES, const char *PLAYS, int TEAM01, int TEAM02, int RES01, int RES02) {
   setColor(0,0,0);
