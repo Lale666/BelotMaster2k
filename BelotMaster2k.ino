@@ -1,8 +1,9 @@
 // Belot Master 2k
-// V0.28
-// 18.03.2021.
-// Changes since V0.27:
-// - added a screen that shows up after the game is over, showing which team won and with which result
+// V0.29
+// 25.03.2021.
+// Changes since V0.28:
+// - added a part that resets the total and hand values when the hand value entered is zero
+// - code optimisation
 
 #define DECODE_NEC 1                    // IR remote protocol definition
 #define MARK_EXCESS_MICROS 20           // Compensation for the signal forming of different IR receiver modules
@@ -75,7 +76,7 @@ void setup() {
   lcd.setCursor(2,1);
   lcd.print("BELOT MASTER 2k");
   lcd.setCursor(7,2);
-  lcd.print("V 0.28");
+  lcd.print("V 0.29");
   lcd.setCursor(3,3);
   lcd.print("M/F SCUM 2021.");
   setColor(0,0,0);                      // Turn the RGB LED off
@@ -112,10 +113,12 @@ void setup() {
         switch(IrReceiver.decodedIRData.command) {
           case BUTTON_ONE:
             if(CHECK1==true) break;         // check if player 1 has already been selected
-            if(TURN==0) FIRST = P1;
-            if(TURN==1) SECOND = P1;
-            if(TURN==2) THIRD = P1;
-            if(TURN==3) FOURTH = P1;
+            switch(TURN) {
+              case 0: FIRST = P1; break;
+              case 1: SECOND = P1; break;
+              case 2: THIRD = P1; break;
+              case 3: FOURTH = P1; break;
+            }
             setColor(255,255,255);
 //            tone(BUZZER, 666, 66);
             delay(DELAY);
@@ -127,10 +130,12 @@ void setup() {
             break;
           case BUTTON_TWO:
             if(CHECK2==true) break;         // check if player 2 has already been selected
-            if(TURN==0) FIRST = P2;
-            if(TURN==1) SECOND = P2;
-            if(TURN==2) THIRD = P2;
-            if(TURN==3) FOURTH = P2;
+            switch(TURN) {
+              case 0: FIRST = P2; break;
+              case 1: SECOND = P2; break;
+              case 2: THIRD = P2; break;
+              case 3: FOURTH = P2; break;
+            }
             setColor(255,255,255);
 //            tone(BUZZER, 666, 66);
             delay(DELAY);
@@ -142,10 +147,12 @@ void setup() {
             break;
           case BUTTON_THREE:
             if(CHECK3==true) break;         // check if player 3 have already been selected
-            if(TURN==0) FIRST = P3;
-            if(TURN==1) SECOND = P3;
-            if(TURN==2) THIRD = P3;
-            if(TURN==3) FOURTH = P3;
+            switch(TURN) {
+              case 0: FIRST = P3; break;
+              case 1: SECOND = P3; break;
+              case 2: THIRD = P3; break;
+              case 3: FOURTH = P3; break;
+            }
             setColor(255,255,255);
 //            tone(BUZZER, 666, 66);
           delay(DELAY);
@@ -157,10 +164,12 @@ void setup() {
             break;
           case BUTTON_FOUR:
             if(CHECK4==true) break;        // check if player 4 have already been selected
-            if(TURN==0) FIRST = P4;
-            if(TURN==1) SECOND = P4;
-            if(TURN==2) THIRD = P4;
-            if(TURN==3) FOURTH = P4;
+            switch(TURN) {
+              case 0: FIRST = P4; break;
+              case 1: SECOND = P4; break;
+              case 2: THIRD = P4; break;
+              case 3: FOURTH = P4; break;
+            }
             setColor(255,255,255);
 //            tone(BUZZER, 666, 66);
           delay(DELAY);
@@ -172,10 +181,12 @@ void setup() {
             break;
           case BUTTON_FIVE:
             if(CHECK5==true) break;         // check if player 5 have already been selected
-            if(TURN==0) FIRST = P5;
-            if(TURN==1) SECOND = P5;
-            if(TURN==2) THIRD = P5;
-            if(TURN==3) FOURTH = P5;
+            switch(TURN) {
+              case 0: FIRST = P5; break;
+              case 1: SECOND = P5; break;
+              case 2: THIRD = P5; break;
+              case 3: FOURTH = P5; break;
+            }
             setColor(255,255,255);
 //            tone(BUZZER, 666, 66);
             delay(DELAY);
@@ -187,10 +198,12 @@ void setup() {
             break;
           case BUTTON_SIX:
             if(CHECK6==true) break;         // check if player 6 have already been selected
-            if(TURN==0) FIRST = P6;
-            if(TURN==1) SECOND = P6;
-            if(TURN==2) THIRD = P6;
-            if(TURN==3) FOURTH = P6;
+            switch(TURN) {
+              case 0: FIRST = P6; break;
+              case 1: SECOND = P6; break;
+              case 2: THIRD = P6; break;
+              case 3: FOURTH = P6; break;
+            }
             setColor(255,255,255);
 //            tone(BUZZER, 666, 66);
             delay(DELAY);
@@ -216,29 +229,15 @@ void loop() {
     switch(IrReceiver.decodedIRData.command) {
       case BUTTON_OK:
         TURN++;
-        if(TURN==1) {
-//          zvuk1;
-          ispis(SECOND,THIRD,TEAM1,TEAM2,RESULT1,RESULT2);
-          FLASH = true;
-          }
-        if(TURN==2) {
-//          zvuk2;
-          ispis(THIRD,FOURTH,TEAM1,TEAM2,RESULT1,RESULT2);
-          FLASH = true;
-          }
-        if(TURN==3) {
-//          zvuk3;
-          ispis(FOURTH,FIRST,TEAM1,TEAM2,RESULT1,RESULT2);
-          FLASH = true;
-          }
-        if(TURN==4) {
-//          zvuk4;
-          ispis(FIRST,SECOND,TEAM1,TEAM2,RESULT1,RESULT2);
-          FLASH = true;
-          TURN = 0;
-          }
-        delay(DELAY);
+        switch(TURN) {
+          case 1: ispis(SECOND,THIRD,TEAM1,TEAM2,RESULT1,RESULT2); break;
+          case 2: ispis(THIRD,FOURTH,TEAM1,TEAM2,RESULT1,RESULT2); break;
+          case 3: ispis(FOURTH,FIRST,TEAM1,TEAM2,RESULT1,RESULT2); break;
+          case 4: ispis(FIRST,SECOND,TEAM1,TEAM2,RESULT1,RESULT2); TURN = 0; break;
+        }
+        FLASH = true;
         RESET = true;
+        delay(DELAY);
         break;
       case BUTTON_RED:
         setColor(255,0,0);
@@ -270,8 +269,11 @@ void loop() {
         break;
       case BUTTON_EPG:
         THAND1 = upis(12,1);
-        if(THAND1 == 1) THAND1 = 0;
-        if(THAND1 != 1) TOTAL = TOTAL + THAND1;
+        switch(THAND1) {
+          case 0: HAND1 = 0; TOTAL = 162 + HAND2; break;
+          case 1: THAND1 = 0; break;
+        }
+        TOTAL = TOTAL + THAND1;
         HAND1 = HAND1 + THAND1;
         lcd.setCursor(12,1);
         lcd.print("   ");
@@ -282,8 +284,11 @@ void loop() {
         break;
       case BUTTON_FAV:
         THAND2 = upis(16,1);
-        if(THAND2 == 1) THAND2 = 0;
-        if(THAND2 != 1) TOTAL = TOTAL + THAND2;
+        switch(THAND2) {
+          case 0: HAND2 = 0; TOTAL = 162 + HAND1; break;
+          case 1: THAND2 = 0; break;
+        }
+        TOTAL = TOTAL + THAND2;
         HAND2 = HAND2 + THAND2;
         lcd.setCursor(16,1);
         lcd.print("   ");
@@ -312,25 +317,15 @@ void loop() {
         }
         TURN++;
         TOTAL = 162;
-        if(TURN==1) {
-          ispis(SECOND,THIRD,TEAM1,TEAM2,RESULT1,RESULT2);
-          FLASH = true;
+        switch(TURN) {
+          case 1: ispis(SECOND,THIRD,TEAM1,TEAM2,RESULT1,RESULT2); break;
+          case 2: ispis(THIRD,FOURTH,TEAM1,TEAM2,RESULT1,RESULT2); break;
+          case 3: ispis(FOURTH,FIRST,TEAM1,TEAM2,RESULT1,RESULT2); break;
+          case 4: ispis(FIRST,SECOND,TEAM1,TEAM2,RESULT1,RESULT2); TURN = 0; break;
         }
-        if(TURN==2) {
-          ispis(THIRD,FOURTH,TEAM1,TEAM2,RESULT1,RESULT2);
-          FLASH = true;
-        }
-        if(TURN==3) {
-          ispis(FOURTH,FIRST,TEAM1,TEAM2,RESULT1,RESULT2);
-          FLASH = true;
-        }
-        if(TURN==4) {
-          ispis(FIRST,SECOND,TEAM1,TEAM2,RESULT1,RESULT2);
-          FLASH = true;
-          TURN = 0;
-        }
-        delay(DELAY);
+        FLASH = true;
         RESET = true;
+        delay(DELAY);
         break;
       case BUTTON_RIGHT:
         TRES2 = upis(6,1);
@@ -352,25 +347,15 @@ void loop() {
         }
         TURN++;
         TOTAL = 162;
-        if(TURN==1) {
-          ispis(SECOND,THIRD,TEAM1,TEAM2,RESULT1,RESULT2);
-          FLASH = true;
+        switch(TURN) {
+          case 1: ispis(SECOND,THIRD,TEAM1,TEAM2,RESULT1,RESULT2); break;
+          case 2: ispis(THIRD,FOURTH,TEAM1,TEAM2,RESULT1,RESULT2); break;
+          case 3: ispis(FOURTH,FIRST,TEAM1,TEAM2,RESULT1,RESULT2); break;
+          case 4: ispis(FIRST,SECOND,TEAM1,TEAM2,RESULT1,RESULT2); TURN = 0; break;
         }
-        if(TURN==2) {
-          ispis(THIRD,FOURTH,TEAM1,TEAM2,RESULT1,RESULT2);
-          FLASH = true;
-        }
-        if(TURN==3) {
-          ispis(FOURTH,FIRST,TEAM1,TEAM2,RESULT1,RESULT2);
-          FLASH = true;
-        }
-        if(TURN==4) {
-          ispis(FIRST,SECOND,TEAM1,TEAM2,RESULT1,RESULT2);
-          FLASH = true;
-          TURN = 0;
-        }
-        delay(DELAY);
+        FLASH = true;
         RESET = true;
+        delay(DELAY);
         break;
       case BUTTON_CH_PLUS:
         TEAM1++;
