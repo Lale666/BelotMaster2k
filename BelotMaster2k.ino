@@ -1,37 +1,40 @@
 // Belot Master 2k
-// V0.29
-// 25.03.2021.
-// Changes since V0.28:
-// - added a part that resets the total and hand values when the hand value entered is zero
-// - code optimisation
+// V0.30
+// 01.04.2021.
+// Changes since V0.29:
+// - new IR remote with new codes (the old one didn´t have all functional keys)
+// - simplified the way values are entered
+// - other minor QoL improvements
 
 #define DECODE_NEC 1                    // IR remote protocol definition
 #define MARK_EXCESS_MICROS 20           // Compensation for the signal forming of different IR receiver modules
 #include <IRremote.h>                   // Arduino IRremote library 
-#define BUTTON_ONE        0x52          // Remote controller HEX codes for appropriate buttons
-#define BUTTON_TWO        0x50
-#define BUTTON_THREE      0x10
-#define BUTTON_FOUR       0x56
-#define BUTTON_FIVE       0x54
-#define BUTTON_SIX        0x14
-#define BUTTON_SEVEN      0x4E
-#define BUTTON_EIGHT      0x4C
-#define BUTTON_NINE       0xC
-#define BUTTON_ZERO       0xF
-#define BUTTON_RED        0x46
-#define BUTTON_GREEN      0x44
-#define BUTTON_YELLOW     0x4
-#define BUTTON_BLUE       0x7
-#define BUTTON_OK         0x1A
-#define BUTTON_LEFT       0x5A
-#define BUTTON_RIGHT      0x1B
-#define BUTTON_EXIT       0x5
-#define BUTTON_EPG        0x55
-#define BUTTON_FAV        0x15
-#define BUTTON_CH_PLUS    0x4D
-#define BUTTON_CH_MINUS   0x51
-#define BUTTON_VOL_PLUS   0xD
-#define BUTTON_VOL_MINUS  0x11
+#define BUTTON_ONE        0x11          // Remote controller HEX codes for appropriate buttons
+#define BUTTON_TWO        0x12
+#define BUTTON_THREE      0x13
+#define BUTTON_FOUR       0x14
+#define BUTTON_FIVE       0x15
+#define BUTTON_SIX        0x16
+#define BUTTON_SEVEN      0x17
+#define BUTTON_EIGHT      0x18
+#define BUTTON_NINE       0x19
+#define BUTTON_ZERO       0x10
+#define BUTTON_RED        0xB
+#define BUTTON_GREEN      0x4
+#define BUTTON_YELLOW     0x5
+#define BUTTON_BLUE       0xC
+#define BUTTON_OK         0xE
+#define BUTTON_LEFT       0x7
+#define BUTTON_RIGHT      0x6
+#define BUTTON_UP         0x40
+#define BUTTON_DOWN       0x41
+#define BUTTON_EXIT       0x50
+#define BUTTON_GUIDE      0x43
+#define BUTTON_INFO       0x1E
+#define BUTTON_CH_PLUS    0x0
+#define BUTTON_CH_MINUS   0x1
+#define BUTTON_VOL_PLUS   0x2
+#define BUTTON_VOL_MINUS  0x3
 
 #include <LiquidCrystal_I2C.h>          // LCD I2C library
 LiquidCrystal_I2C lcd(0x27,20,4);       // Define 20x4 LCD screen
@@ -48,10 +51,10 @@ const int DELAY = 150;
 int TURN = 0;                           // Player´s turn 
 boolean FLASH = true;                   // LED Flash
 boolean RESET = false;                  // A flag to reset all the temporary values
+// boolean SECURITY = false;               // A flag to prevent accidental pressing of OK key
 boolean CHECK1, CHECK2, CHECK3 = false;         // Checking if the player has been already selected
 boolean CHECK4, CHECK5, CHECK6 = false;
 int HAND1, HAND2 = 0;                   // Values of hand for both teams (straight, 4 of a kind etc)
-int THAND1, THAND2 = 0;                 // Temporary values of hand for both teams
 int TEAM1, TEAM2 = 0;                   // Overall result for both teams
 int RESULT1, RESULT2 = 0;               // Current result for both teams
 int TRES1, TRES2 = 0;                   // Temporary result for both teams
@@ -76,7 +79,7 @@ void setup() {
   lcd.setCursor(2,1);
   lcd.print("BELOT MASTER 2k");
   lcd.setCursor(7,2);
-  lcd.print("V 0.29");
+  lcd.print("V 0.30");
   lcd.setCursor(3,3);
   lcd.print("M/F SCUM 2021.");
   setColor(0,0,0);                      // Turn the RGB LED off
@@ -228,6 +231,7 @@ void loop() {
   if (IrReceiver.decode()) {
     switch(IrReceiver.decodedIRData.command) {
       case BUTTON_OK:
+//        if(SECURITY=true) break;
         TURN++;
         switch(TURN) {
           case 1: ispis(SECOND,THIRD,TEAM1,TEAM2,RESULT1,RESULT2); break;
@@ -267,14 +271,10 @@ void loop() {
         FLASH = false;
         delay(DELAY);
         break;
-      case BUTTON_EPG:
-        THAND1 = upis(12,1);
-        switch(THAND1) {
-          case 0: HAND1 = 0; TOTAL = 162 + HAND2; break;
-          case 1: THAND1 = 0; break;
-        }
-        TOTAL = TOTAL + THAND1;
-        HAND1 = HAND1 + THAND1;
+      case BUTTON_GUIDE:
+        HAND1 = upisz(12,1,HAND1);
+        TOTAL = 162 + HAND1 + HAND2;
+//        SECURITY = true;
         lcd.setCursor(12,1);
         lcd.print("   ");
         lcd.setCursor(12,1);
@@ -282,14 +282,10 @@ void loop() {
         lcd.setCursor(17,2);
         lcd.print(TOTAL);
         break;
-      case BUTTON_FAV:
-        THAND2 = upis(16,1);
-        switch(THAND2) {
-          case 0: HAND2 = 0; TOTAL = 162 + HAND1; break;
-          case 1: THAND2 = 0; break;
-        }
-        TOTAL = TOTAL + THAND2;
-        HAND2 = HAND2 + THAND2;
+      case BUTTON_INFO:
+        HAND2 = upisz(16,1,HAND2);
+        TOTAL = 162 + HAND1 + HAND2;
+//        SECURITY = true;
         lcd.setCursor(16,1);
         lcd.print("   ");
         lcd.setCursor(16,1);
@@ -298,12 +294,12 @@ void loop() {
         lcd.print(TOTAL);
         break;
       case BUTTON_LEFT:
-        TRES1 = upis(0,1);
-        if(TRES1>TOTAL) TRES1 = 1;
+        TRES1 = upis(0,1,TOTAL);
         if(TRES1 != 1) {
           TRES2 = TOTAL - TRES1;
           RESULT1 = RESULT1 + TRES1;
           RESULT2 = RESULT2 + TRES2;
+//          SECURITY = false;
         }
         lcd.setCursor(0,1);
         lcd.print("   ");
@@ -328,12 +324,12 @@ void loop() {
         delay(DELAY);
         break;
       case BUTTON_RIGHT:
-        TRES2 = upis(6,1);
-        if(TRES2>TOTAL) TRES2 = 1;
+        TRES2 = upis(6,1,TOTAL);
         if(TRES2 != 1) {
           TRES1 = TOTAL - TRES2;
           RESULT2 = RESULT2 + TRES2;
           RESULT1 = RESULT1 + TRES1;
+//          SECURITY = false;
         }
         lcd.setCursor(0,1);
         lcd.print(RESULT1);
@@ -357,36 +353,36 @@ void loop() {
         RESET = true;
         delay(DELAY);
         break;
-      case BUTTON_CH_PLUS:
-        TEAM1++;
-        lcd.setCursor(3,0);
-        lcd.print(TEAM1);
-        delay(DELAY);
-        break;
-      case BUTTON_CH_MINUS:
-        TEAM1--;
-        if(TEAM1<0) TEAM1 = 0;
-        lcd.setCursor(3,0);
-        lcd.print("  ");
-        lcd.setCursor(3,0);
-        lcd.print(TEAM1);
-        delay(DELAY);
-        break;
-      case BUTTON_VOL_PLUS:
-        TEAM2++;
-        lcd.setCursor(9,0);
-        lcd.print(TEAM2);
-        delay(DELAY);
-        break;
-      case BUTTON_VOL_MINUS:
-        TEAM2--;
-        if(TEAM2<2) TEAM2 = 0;
-        lcd.setCursor(9,0);
-        lcd.print("  ");
-        lcd.setCursor(9,0);
-        lcd.print(TEAM2);
-        delay(DELAY);
-        break;
+//      case BUTTON_VOL_PLUS:
+//        TEAM1++;
+//        lcd.setCursor(3,0);
+//        lcd.print(TEAM1);
+//        delay(DELAY);
+//        break;
+//      case BUTTON_VOL_MINUS:
+//        TEAM1--;
+//        if(TEAM1<0) TEAM1 = 0;
+//        lcd.setCursor(3,0);
+//      lcd.print("  ");
+//        lcd.setCursor(3,0);
+//        lcd.print(TEAM1);
+//        delay(DELAY);
+//        break;
+//      case BUTTON_CH_PLUS:
+//        TEAM2++;
+//        lcd.setCursor(9,0);
+//        lcd.print(TEAM2);
+//        delay(DELAY);
+//        break;
+//      case BUTTON_CH_MINUS:
+//        TEAM2--;
+//        if(TEAM2<2) TEAM2 = 0;
+//       lcd.setCursor(9,0);
+//       lcd.print("  ");
+//        lcd.setCursor(9,0);
+//        lcd.print(TEAM2);
+//        delay(DELAY);
+//        break;
       }
   IrReceiver.resume();
   }
@@ -429,8 +425,7 @@ if(RESET==true) {
   TRES2 = 0;
   HAND1 = 0;
   HAND2 = 0;
-  THAND1 = 0;
-  THAND2 = 0;
+//  SECURITY = false;
   RESET = false;
   }
 }
@@ -495,118 +490,105 @@ void ispis(const char *SHUFFLES, const char *PLAYS, int TEAM01, int TEAM02, int 
   lcd.print("adut ?");
 }
 
-int upis(int X, int Y) {                            // result input function
+int upisz(int X, int Y, int Z) {
+  int RESULT = Z;
+  boolean TRIGGER = false;
+  lcd.setCursor(X,Y);
+  lcd.blink();
+  lcd.print(Z);
+  while(TRIGGER != true) {
+    if (IrReceiver.decode()) {
+      switch(IrReceiver.decodedIRData.command) {
+        case BUTTON_UP:
+          if(RESULT == 820) break;
+          RESULT = RESULT + 10;
+          lcd.setCursor(X,Y);
+          lcd.print("   ");
+          lcd.setCursor(X,Y);
+          lcd.print(RESULT);
+          delay(DELAY/2);
+          break;
+        case BUTTON_DOWN:
+          if(RESULT == 0) break;
+          RESULT = RESULT - 10;
+          lcd.setCursor(X,Y);
+          lcd.print("   ");
+          lcd.setCursor(X,Y);
+          lcd.print(RESULT);
+          delay(DELAY/2);
+          break;
+        case BUTTON_EXIT:
+          TRIGGER = true;
+          RESULT = Z;
+          delay(DELAY);
+          break;
+        case BUTTON_OK:
+          TRIGGER = true;
+          delay(DELAY);
+          break;
+      }
+      IrReceiver.resume();
+    }
+  }
+  lcd.noBlink();
+  return RESULT;
+}
+
+int upis(int X, int Y, int Z) {                            // result input function
   int RESULT = 0;                       // result
-  int DECIMAL = 0;                      // number of decimals
+  int TOTAL = Z ;
   boolean TRIGGER = false;                
   lcd.setCursor(X,Y);
   lcd.print("   ");
   lcd.setCursor(X,Y);
   lcd.blink();
+  lcd.print(RESULT);
   while(TRIGGER != true) {
     if (IrReceiver.decode()) {
       switch(IrReceiver.decodedIRData.command) {
-        case BUTTON_ONE:
-          if(DECIMAL == 3) break;
-          if(DECIMAL > 0) RESULT = RESULT * 10;
-          RESULT = RESULT + 1;
-          DECIMAL++;
+        case BUTTON_UP:
+          if((RESULT+10) > TOTAL) break;
+          RESULT =  RESULT + 10;
+          lcd.setCursor(X,Y);
+          lcd.print("   ");
           lcd.setCursor(X,Y);
           lcd.print(RESULT);
-          delay(DELAY);
+          delay(DELAY/2);
           break;
-        case BUTTON_TWO:
-          if(DECIMAL == 3) break;
-          if(DECIMAL > 0) RESULT = RESULT * 10;
-          RESULT = RESULT + 2;
-          DECIMAL++;
+        case BUTTON_DOWN:
+          if((RESULT-10) < 0) break;
+          RESULT = RESULT - 10;
+          lcd.setCursor(X,Y);
+          lcd.print("   ");
           lcd.setCursor(X,Y);
           lcd.print(RESULT);
-          delay(DELAY);
+          delay(DELAY/2);
           break;
-        case BUTTON_THREE:
-          if(DECIMAL == 3) break;
-          if(DECIMAL > 0) RESULT = RESULT * 10;
-          RESULT = RESULT + 3;
-          DECIMAL++;
+        case BUTTON_RIGHT:
+          if(RESULT >= TOTAL) break;
+          RESULT++;
+          lcd.setCursor(X,Y);
+          lcd.print("   ");
           lcd.setCursor(X,Y);
           lcd.print(RESULT);
-          delay(DELAY);
+          delay(DELAY/2);
           break;
-        case BUTTON_FOUR:
-          if(DECIMAL == 3) break;
-          if(DECIMAL > 0) RESULT = RESULT * 10;
-          RESULT = RESULT + 4;
-          DECIMAL++;
+        case BUTTON_LEFT:
+          if(RESULT <= 0) break;
+          RESULT--;
+          lcd.setCursor(X,Y);
+          lcd.print("   ");
           lcd.setCursor(X,Y);
           lcd.print(RESULT);
-          delay(DELAY);
-          break;
-        case BUTTON_FIVE:
-          if(DECIMAL == 3) break;
-          if(DECIMAL > 0) RESULT = (RESULT * 10);
-          RESULT = RESULT + 5;
-          DECIMAL++;
-          lcd.setCursor(X,Y);
-          lcd.print(RESULT);
-          delay(DELAY);
-          break;
-        case BUTTON_SIX:
-          if(DECIMAL == 3) break;
-          if(DECIMAL > 0) RESULT = RESULT * 10;
-          RESULT = RESULT + 6;
-          DECIMAL++;
-         lcd.setCursor(X,Y);
-          lcd.print(RESULT);
-          delay(DELAY);
-          break;
-        case BUTTON_SEVEN:
-          if(DECIMAL == 3) break;
-          if(DECIMAL > 0) RESULT = RESULT * 10;
-          RESULT = RESULT + 7;
-          DECIMAL++;
-          lcd.setCursor(X,Y);
-          lcd.print(RESULT);
-          delay(DELAY);
-          break;
-        case BUTTON_EIGHT:
-          if(DECIMAL == 3) break;
-          if(DECIMAL > 0) RESULT = RESULT * 10;
-          RESULT = RESULT + 8;
-          DECIMAL++;
-          lcd.setCursor(X,Y);
-          lcd.print(RESULT);
-          delay(DELAY);
-          break;
-        case BUTTON_NINE:
-          if(DECIMAL == 3) break;
-          if(DECIMAL > 0) RESULT = RESULT * 10;
-          RESULT = RESULT + 9;
-          DECIMAL++;
-          lcd.setCursor(X,Y);
-          lcd.print(RESULT);
-          delay(DELAY);
-          break;
-        case BUTTON_ZERO:
-          if(DECIMAL == 3) break;
-          if(DECIMAL > 0) RESULT = RESULT * 10;
-          DECIMAL++;
-          lcd.setCursor(X,Y);
-          lcd.print(RESULT);
-          delay(DELAY);
+          delay(DELAY/2);
           break;
         case BUTTON_EXIT:
-          RESULT = 1;
           TRIGGER = true;
-//          lcd.setCursor(X,Y);
-//          lcd.print("   ");
-//          lcd.setCursor(X,Y);
+          RESULT = 1;
           delay(DELAY);
           break;
         case BUTTON_OK:
           TRIGGER = true;
-          lcd.setCursor(X,Y);
-          lcd.print("   ");
           delay(DELAY);
           break;
       }
