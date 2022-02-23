@@ -1,14 +1,12 @@
 // Belot Master 2k
-// V0.31
-// 26.12.2021.
-// Changes since V0.30:
-// - added the undo function that will undo the turn and result changes for both teams as they were before the last result entry
-// - the undo function has a verification screen where you can confirm (OK button) or deny (EXIT button) the undo action
-// - the undo function is invoked using the MENU button
-// - simplified the LEDs´ names for clarity
-// - removed some obsolete code
+// V0.32
+// 23.02.2022.
+// Changes since V0.31:
+// - added new visual effect
+// - removed UniversalTimer library
+// - updated IR remote protocol library DECODE function
 
-#define DECODE_NEC 1                    // IR remote protocol definition
+#define DECODE_NEC                      // IR remote protocol definition
 #define MARK_EXCESS_MICROS 20           // Compensation for the signal forming of different IR receiver modules
 #include <IRremote.h>                   // Arduino IRremote library 
 #define BUTTON_ONE        0x11          // Remote controller HEX codes for appropriate buttons
@@ -34,16 +32,13 @@
 #define BUTTON_GUIDE      0x43
 #define BUTTON_INFO       0x1E
 #define BUTTON_MENU       0x1A
-#define BUTTON_CH_PLUS    0x0
-#define BUTTON_CH_MINUS   0x1
-#define BUTTON_VOL_PLUS   0x2
-#define BUTTON_VOL_MINUS  0x3
+// #define BUTTON_CH_PLUS    0x0
+// #define BUTTON_CH_MINUS   0x1
+// #define BUTTON_VOL_PLUS   0x2
+// #define BUTTON_VOL_MINUS  0x3
 
 #include <LiquidCrystal_I2C.h>          // LCD I2C library
 LiquidCrystal_I2C lcd(0x27, 20, 4);     // Define 20x4 LCD screen
-
-#include <UniversalTimer.h>
-UniversalTimer FiveSeconds(2500, true); // Five seconds repeating timer
 
 const int IR_RECEIVE_PIN = 9;           // IR Receive on pin 9
 const int RED = 3;                      // Red LED on pin 3
@@ -51,11 +46,11 @@ const int GREEN = 4;                    // Green LED on pin 4
 const int YELLOW = 5;                   // Yellow LED on pin 5
 const int BLUE = 6;                     // Blue LED on pin 6
 const int DELAY = 150;
-int BOJA = 3;
+int BOJA = 0;
 int TURN = 0;                           // Player´s turn
 boolean FLASH = true;                   // LED Flash
 boolean RESET = false;                  // A flag to reset all the temporary values
-boolean CHECK1, CHECK2, CHECK3 = false;         // Checking if the player has been already selected
+boolean CHECK1, CHECK2, CHECK3 = false; // Checking if the player has been already selected
 boolean CHECK4, CHECK5, CHECK6 = false;
 int HAND1, HAND2 = 0;                   // Values of hand for both teams (straight, 4 of a kind etc)
 int TEAM1, TEAM2 = 0;                   // Overall result for both teams
@@ -66,13 +61,14 @@ int TOTAL = 162;                        // Total hand points
 int TOTALUNDO = 0;                      // Undo value for total hand points
 int TURNUNDO = 0;                       // Undo value for turn
 boolean UNDOVAL = false;                // Undo value after the check
+int MATRICA[6] = {3,4,5,6,5,4};
 const char *FIRST, *SECOND, *THIRD, *FOURTH; // Pointers to players
 const char *P1 = "BOSS  ";                // Players´ names
 const char *P2 = "FAKI  ";
 const char *P3 = "GELAS ";
 const char *P4 = "KRAJA ";
 const char *P5 = "LALE  ";
-const char *P6 = "SKRGA  ";
+const char *P6 = "SECA  ";
 
 void setup() {
   pinMode(RED, OUTPUT);                // Red color
@@ -87,9 +83,9 @@ void setup() {
   lcd.setCursor(2, 1);
   lcd.print("BELOT MASTER 2k");
   lcd.setCursor(7, 2);
-  lcd.print("V 0.31");
+  lcd.print("V 0.32");
   lcd.setCursor(3, 3);
-  lcd.print("M/F SCUM 2021.");
+  lcd.print("M/F SCUM 2022");
   setColor(0);                          // Turn the RGB LED off
   delay(4000);
 
@@ -231,8 +227,6 @@ void setup() {
   TURN = 0;
   ispis(FIRST, SECOND, TEAM1, TEAM2, RESULT1, RESULT2);
   FLASH = true;
-  FiveSeconds.start();
-  //  IrReceiver.resume();
 }
 
 void loop() {
@@ -415,12 +409,12 @@ void loop() {
     }
     IrReceiver.resume();
   }
-  if (FiveSeconds.check() & FLASH == true) {
-    setColor(BOJA);
+  if (FLASH == true) {
+    setColor(MATRICA[BOJA]);
     BOJA++;
-    if (BOJA > 6) BOJA = 3;
+    if (BOJA > 5) BOJA = 0;
     delay(DELAY);
-    setColor(0);
+//    setColor(0);
   }
   if (RESULT1 > 1000 & RESULT1 > RESULT2) {
     TEAM1++;
